@@ -13,10 +13,10 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const Home = () => {
   const navigation = useNavigation<NavigationProp>();
   useEffect(() => {
-    const createTableAsync = async () => {
-      await createTable();
-    };
-    createTableAsync();
+    // Initialize database tables
+    createTable().catch((error) => {
+      console.error('Error initializing database:', error);
+    });
   }, []);
 
   return (
@@ -29,7 +29,7 @@ const Home = () => {
             onPress={() => navigation.navigate('Users')}
           >
             <Text style={Styles.buttonIcon}>👤</Text>
-            <Text style={Styles.buttonText}>Create User</Text>
+            <Text style={Styles.buttonText}>Users</Text>
             <Text style={Styles.buttonSubtext}>Register new employee</Text>
           </TouchableOpacity>
 

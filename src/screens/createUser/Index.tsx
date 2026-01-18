@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, NativeModules } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import Styles from './Styles';
 import colors from '../../utils/colors';
 import { openCamera } from '../../utils/camera';
 import { createUser } from '../../sqlite/service/user';
+import { showToast } from '../../utils/toast';
+import { RootStackParamList } from '../../navigation/AppContainer';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CreateUser = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [fullName, setFullName] = useState('');
   const [base64Image, setBase64Image] = useState<string | null>(null);
 
@@ -27,15 +33,28 @@ const CreateUser = () => {
       Alert.alert('Validation', 'Please select an image');
       return;
     }
-    const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
-    console.log('Embedding:', embedding);
-    const embeddingArray = embedding.split(',').map(Number);
-    console.log('Embedding Array:', embeddingArray);
-    const success = await createUser(fullName, embeddingArray);
-    if (success) {
-      Alert.alert('Success', 'User created successfully!');
-    } else {
-      Alert.alert('Error', 'Failed to create user');
+    try {
+      const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
+      console.log('Embedding:', embedding);
+      const embeddingArray = embedding.split(',').map(Number);
+      console.log('Embedding Array:', embeddingArray);
+      const success = await createUser(fullName, embeddingArray);
+      if (success) {
+        showToast('User created successfully!', 'success');
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
+      } else {
+        showToast('Failed to create user', 'error');
+      }
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      const errorMessage = error?.message || error?.toString() || '';
+      if (errorMessage.includes('No face detected')) {
+        showToast('Error: No face detected', 'error');
+      } else {
+        showToast('Failed to create user', 'error');
+      }
     }
   };
 
