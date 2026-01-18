@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import colors from './colors';
 
-let toastTimeout: NodeJS.Timeout | null = null;
+let toastTimeout: ReturnType<typeof setTimeout> | null = null;
 let setToastState: ((message: string | null, type: 'success' | 'error') => void) | null = null;
 
 export const showToast = (message: string, type: 'success' | 'error' = 'success') => {
