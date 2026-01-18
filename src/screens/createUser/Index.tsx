@@ -1,48 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, NativeModules } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
 import Header from '../../components/header/Index';
 import Styles from './Styles';
 import colors from '../../utils/colors';
+import { openCamera } from '../../utils/camera';
+import { createUser } from '../../sqlite/service/user';
 
 const CreateUser = () => {
   const [fullName, setFullName] = useState('');
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [base64Image, setBase64Image] = useState<string | null>(null);
 
-  const handleImagePicker = () => {
-    launchImageLibrary(
-      {
-        mediaType: 'photo',
-        includeBase64: true,
-        quality: 0.8,
-      },
-      (response: ImagePickerResponse) => {
-        if (response.didCancel) {
-          return;
-        }
-        if (response.errorMessage) {
-          Alert.alert('Error', response.errorMessage);
-          return;
-        }
-        if (response.assets && response.assets[0]) {
-          setImageUri(response.assets[0].uri || null);
-        }
-      }
-    );
+  const handleImagePicker = async () => {
+    const base64Image = await openCamera();
+    if (!base64Image) return;
+    setBase64Image(base64Image);
   };
 
-  const handleCreateUser = () => {
+  const handleCreateUser = async () => {
     if (!fullName.trim()) {
       Alert.alert('Validation', 'Please enter full name');
       return;
     }
-    if (!imageUri) {
+    if (!base64Image) {
       Alert.alert('Validation', 'Please select an image');
       return;
     }
-    // TODO: Implement user creation logic
-    Alert.alert('Success', 'User created successfully!');
+    const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
+    console.log('Embedding:', embedding);
+    const embeddingArray = embedding.split(',').map(Number);
+    console.log('Embedding Array:', embeddingArray);
+    const success = await createUser(fullName, embeddingArray);
+    if (success) {
+      Alert.alert('Success', 'User created successfully!');
+    } else {
+      Alert.alert('Error', 'Failed to create user');
+    }
   };
 
   return (
@@ -64,8 +58,8 @@ const CreateUser = () => {
           <View style={Styles.inputContainer}>
             <Text style={Styles.label}>Profile Image</Text>
             <TouchableOpacity style={Styles.imagePicker} onPress={handleImagePicker}>
-              {imageUri ? (
-                <Image source={{ uri: imageUri }} style={Styles.imagePreview} />
+                {base64Image ? (
+                  <Image source={{ uri: `data:image/jpeg;base64,${base64Image}` }} style={Styles.imagePreview} />
               ) : (
                 <View style={Styles.imagePlaceholder}>
                   <Text style={Styles.imagePlaceholderIcon}>📷</Text>

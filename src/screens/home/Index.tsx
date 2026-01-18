@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -6,11 +6,18 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import { RootStackParamList } from '../../navigation/AppContainer';
 import Styles from './Styles';
+import { createTable } from '../../sqlite';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Home = () => {
   const navigation = useNavigation<NavigationProp>();
+  useEffect(() => {
+    const createTableAsync = async () => {
+      await createTable();
+    };
+    createTableAsync();
+  }, []);
 
   return (
     <SafeAreaView style={Styles.container}>
