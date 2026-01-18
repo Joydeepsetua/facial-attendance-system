@@ -8,6 +8,7 @@ import { getAllUsers } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
 import Styles from './Styles';
 import colors from '../../utils/colors';
+import { createAttendance } from '../../sqlite/service/attendance';
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
   let dotProduct = 0;
@@ -31,7 +32,7 @@ const Attendance = () => {
   const [matchedUser, setMatchedUser] = useState<{ uuid: string, name: string, similarity: number } | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
-  
+
   const handleCapturePhoto = async () => {
     try {
       setLoading(true);
@@ -81,6 +82,11 @@ const Attendance = () => {
       }
 
       if (bestMatch) {
+        const success = await createAttendance(bestMatch.uuid);        
+        if (!success) {
+          showToast('Failed to mark attendance', 'error');
+          return;
+        }
         setMatchedUser(bestMatch);
         showToast(`Attendance marked for ${bestMatch.name}`, 'success');
       } else {
@@ -124,15 +130,18 @@ const Attendance = () => {
         )}
 
         {capturedImage && loading ? (
-              <View style={Styles.buttonPlaceholder}>
-                <ActivityIndicator color={colors.DARK_GRAY} />
-              </View>
+          <View style={Styles.buttonPlaceholder}>
+            <ActivityIndicator color={colors.DARK_GRAY} />
+          </View>
         ) : matchedUser ? (
           <View style={Styles.resultContainer}>
             <View style={Styles.successCard}>
               <Text style={Styles.successIcon}>✅</Text>
+              <Text style={Styles.similarityText}>
+                Attendance marked for
+              </Text>
               <Text style={Styles.matchedName}>{matchedUser.name}</Text>
-                <Text style={Styles.similarityText}>
+              <Text style={Styles.similarityText}>
                 Match: {(matchedUser.similarity * 100).toFixed(1)}%
               </Text>
             </View>

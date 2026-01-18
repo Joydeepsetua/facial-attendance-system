@@ -65,7 +65,7 @@ const Styles = StyleSheet.create({
     elevation: 3,
   },
   successIcon: {
-    fontSize: 48,
+    fontSize: 36,
     marginBottom: 12,
   },
   matchedName: {
