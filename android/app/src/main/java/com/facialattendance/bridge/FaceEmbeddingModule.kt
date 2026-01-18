@@ -1,54 +1,69 @@
 package com.facialattendance.bridge
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.util.Base64
 import com.facebook.react.bridge.*
-import com.facialattendance.facenet.FaceNetModel
-import com.facialattendance.facenet.ImagePreprocessor
+import com.facialattendance.ml.BitmapUtils
+import com.facialattendance.ml.FaceDetectorHelper
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.common.FileUtil
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class FaceEmbeddingModule(
     reactContext: ReactApplicationContext
 ) : ReactContextBaseJavaModule(reactContext) {
 
-    private val faceNetModel: FaceNetModel by lazy {
-        FaceNetModel(reactContext.applicationContext)
+    private var interpreter: Interpreter? = null
+
+    init {
+        val model = FileUtil.loadMappedFile(reactContext, "facenet.tflite")
+        interpreter = Interpreter(model)
     }
 
-    override fun getName(): String {
-        return "FaceEmbedding"
-    }
-
-    @ReactMethod
-    fun ping(promise: Promise) {
-        promise.resolve("Native module connected")
-    }
+    override fun getName(): String = "FaceEmbedding"
 
     @ReactMethod
     fun getEmbedding(base64Image: String, promise: Promise) {
         try {
-            // Decode base64 string to byte array
-            val imageBytes = Base64.decode(base64Image, Base64.DEFAULT)
-            
-            // Convert byte array to Bitmap
-            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                ?: throw Exception("Failed to decode image")
-            
-            // Preprocess the image
-            val preprocessedBuffer = ImagePreprocessor.preprocess(bitmap)
-            
-            // Get embedding from FaceNet model
-            val embedding = faceNetModel.getEmbedding(preprocessedBuffer)
-            
-            // Convert FloatArray to WritableArray
-            val embeddingArray = Arguments.createArray()
-            for (value in embedding) {
-                embeddingArray.pushDouble(value.toDouble())
-            }
-            
-            promise.resolve(embeddingArray)
+            // 1️⃣ Decode base64 → Bitmap
+            val bitmap = BitmapUtils.base64ToBitmap(base64Image)
+
+            // 2️⃣ Detect & crop face
+            FaceDetectorHelper.detectAndCropFace(bitmap,
+                onSuccess = { faceBitmap ->
+                    // 3️⃣ Preprocess & run FaceNet
+                    val input = preprocess(faceBitmap)
+                    val output = TensorBuffer.createFixedSize(intArrayOf(1, 128), org.tensorflow.lite.DataType.FLOAT32)
+                    interpreter?.run(input, output.buffer.rewind())
+                    promise.resolve(output.floatArray.joinToString(","))
+                },
+                onFailure = {
+                    promise.reject("FACE_ERROR", it.message)
+                }
+            )
         } catch (e: Exception) {
-            promise.reject("EMBEDDING_ERROR", "Failed to get embedding: ${e.message}", e)
+            promise.reject("ERROR", e.message)
         }
+    }
+
+    private fun preprocess(bitmap: Bitmap): ByteBuffer {
+        val inputImage = Bitmap.createScaledBitmap(bitmap, 160, 160, true)
+        val imgData = ByteBuffer.allocateDirect(1 * 160 * 160 * 3 * 4)
+        imgData.order(ByteOrder.nativeOrder())
+
+        for (y in 0 until 160) {
+            for (x in 0 until 160) {
+                val pixel = inputImage.getPixel(x, y)
+                val r = ((pixel shr 16) and 0xFF) / 255.0f
+                val g = ((pixel shr 8) and 0xFF) / 255.0f
+                val b = (pixel and 0xFF) / 255.0f
+
+                imgData.putFloat((r - 0.5f) * 2f)
+                imgData.putFloat((g - 0.5f) * 2f)
+                imgData.putFloat((b - 0.5f) * 2f)
+            }
+        }
+        return imgData
     }
 }
