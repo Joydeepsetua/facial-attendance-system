@@ -13,6 +13,17 @@ export interface User {
   is_active?: boolean;
 }
 
+// Helper function to format date for SQLite (YYYY-MM-DD HH:MM:SS)
+const formatDateForSQLite = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 // CREATE USER
 export const createUser = async (name: string, embedding: number[]): Promise<boolean> => {
   if (!name || !embedding) {
@@ -23,15 +34,18 @@ export const createUser = async (name: string, embedding: number[]): Promise<boo
   return new Promise((resolve) => {
     const userUuid = uuid.v4() as string;
     const embeddingJson = JSON.stringify(embedding);
+    const currentDateTime = formatDateForSQLite(new Date());
     
     const query = `INSERT INTO ${TN_USERS} (
-      uuid, name, embedding, is_active
-    ) VALUES (?, ?, ?, ?)`;
+      uuid, name, embedding, created_at, updated_at, is_active
+    ) VALUES (?, ?, ?, ?, ?, ?)`;
   
     const values = [
       userUuid,
       name,
       embeddingJson,
+      currentDateTime,
+      currentDateTime,
       1
     ];
     
@@ -159,7 +173,9 @@ export const updateUser = async (userUuid: string, name?: string, embedding?: nu
       return;
     }
 
-    updates.push('updated_at = CURRENT_TIMESTAMP');
+    const currentDateTime = formatDateForSQLite(new Date());
+    updates.push('updated_at = ?');
+    values.push(currentDateTime);
     values.push(userUuid);
 
     const query = `UPDATE ${TN_USERS} SET ${updates.join(', ')} WHERE uuid = ?`;
@@ -193,12 +209,13 @@ export const deleteUser = async (userUuid: string): Promise<boolean> => {
   }
 
   return new Promise((resolve) => {
-    const query = `UPDATE ${TN_USERS} SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE uuid = ?`;
+    const currentDateTime = formatDateForSQLite(new Date());
+    const query = `UPDATE ${TN_USERS} SET is_active = 0, updated_at = ? WHERE uuid = ?`;
     
     db.transaction((tx) => {
       tx.executeSql(
         query,
-        [userUuid],
+        [currentDateTime, userUuid],
         () => {
           console.log("User deleted successfully:", userUuid);
           resolve(true);

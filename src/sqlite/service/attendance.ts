@@ -13,6 +13,17 @@ export interface Attendance {
   is_active?: boolean;
 }
 
+// Helper function to format date for SQLite (YYYY-MM-DD HH:MM:SS)
+const formatDateForSQLite = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 // CREATE ATTENDANCE RECORD
 export const createAttendance = async (userId: string): Promise<boolean> => {
   if (!userId) {
@@ -22,13 +33,15 @@ export const createAttendance = async (userId: string): Promise<boolean> => {
 
   return new Promise((resolve) => {
     const attendanceId = uuid.v4() as string;
+    const currentDateTime = formatDateForSQLite(new Date());
     const query = `INSERT INTO ${TN_ATTENDANCE} (
-      id, user_id, is_active
-    ) VALUES (?, ?, ?)`;
+      id, user_id, created_at, is_active
+    ) VALUES (?, ?, ?, ?)`;
   
     const values = [
       attendanceId,
       userId,
+      currentDateTime,
       1
     ];
     
