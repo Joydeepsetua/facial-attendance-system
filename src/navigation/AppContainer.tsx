@@ -5,6 +5,7 @@ import Home from '../screens/home/Index';
 import CreateUser from '../screens/createUser/Index';
 import Attendance from '../screens/attendance/Index';
 import Report from '../screens/report/Index';
+import Users from '../screens/users/Index';
 
 
 export type RootStackParamList = {
@@ -12,6 +13,7 @@ export type RootStackParamList = {
     CreateUser: undefined;
     Attendance: undefined;
     Report: undefined;
+    Users: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,6 +26,7 @@ function AppContainer(props: any) {
             <Stack.Screen name="CreateUser" component={CreateUser} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Attendance" component={Attendance} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Report" component={Report} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Users" component={Users} options={{ animation: 'slide_from_right' }} />
         </Stack.Navigator>
     )
 }

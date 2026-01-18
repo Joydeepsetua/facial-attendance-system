@@ -17,9 +17,9 @@ const Style = StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingEnd: 10,
   },
   iconText: {
     fontSize: 24,

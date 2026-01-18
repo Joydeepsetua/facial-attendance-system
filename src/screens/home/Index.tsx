@@ -19,7 +19,7 @@ const Home = () => {
         <View style={Styles.buttonContainer}>
           <TouchableOpacity
             style={[Styles.button, Styles.buttonPrimary]}
-            onPress={() => navigation.navigate('CreateUser')}
+            onPress={() => navigation.navigate('Users')}
           >
             <Text style={Styles.buttonIcon}>👤</Text>
             <Text style={Styles.buttonText}>Create User</Text>
