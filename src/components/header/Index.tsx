@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Style from './Styles';
 import { RootStackParamList } from '../../navigation/AppContainer';
+import colors from '../../constants/colors';
+import IconButton from '../icons/IconButton';
 
 interface HeaderProps {
   title: string;
@@ -19,9 +21,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
     <View style={Style.headerContainer}>
       <View style={Style.headLeft}>
         {showBack && (
-          <TouchableOpacity style={Style.iconButton} onPress={() => navigation.goBack()}>
-            <Text style={Style.iconText}>←</Text>
-          </TouchableOpacity>
+          <IconButton icon="back" onPress={() => navigation.goBack()} size="md" color={colors.TEXT_PRIMARY} style={Style.iconButton} strokeWidth={3} />
         )}
         <View style={Style.titleContainer}>
           <Text style={Style.title} numberOfLines={1}>

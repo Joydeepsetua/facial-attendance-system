@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_DARK,
   },
   content: {
     flex: 1,
@@ -24,25 +24,25 @@ const Styles = StyleSheet.create({
     marginBottom: 12,
   },
   retakeButton: {
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_ELEVATED,
     borderWidth: 1,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.BG_BORDER,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    shadowColor: colors.BLACK,
+    shadowColor: colors.SHADOW,
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
   retakeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
   resultContainer: {
     alignItems: 'center',
@@ -55,12 +55,12 @@ const Styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.GREEN,
     width: '100%',
-    shadowColor: colors.BLACK,
+    shadowColor: colors.SHADOW,
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.4,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -71,22 +71,22 @@ const Styles = StyleSheet.create({
   matchedName: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.BLACK,
+    color: colors.TEXT_PRIMARY,
     marginBottom: 8,
     textAlign: 'center',
   },
   similarityText: {
     fontSize: 14,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
     fontWeight: '500',
   },
   errorCard: {
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_CARD,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.BG_BORDER,
     width: '100%',
   },
   errorIcon: {
@@ -96,23 +96,22 @@ const Styles = StyleSheet.create({
   noMatchText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
     textAlign: 'center',
   },
   captureButton: {
     borderWidth: 2,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.PRIMARY,
     borderStyle: 'dashed',
     borderRadius: 12,
     overflow: 'hidden',
     marginHorizontal: 20,
-
   },
   buttonPlaceholder: {
     height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.LIGHT_GRAY_BG,
+    backgroundColor: colors.BG_CARD,
   },
   buttonPlaceholderIcon: {
     fontSize: 48,
@@ -120,7 +119,7 @@ const Styles = StyleSheet.create({
   },
   buttonPlaceholderText: {
     fontSize: 14,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
 });
 

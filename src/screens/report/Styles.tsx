@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_DARK,
   },
   content: {
     flex: 1,
@@ -19,22 +19,22 @@ const Styles = StyleSheet.create({
     paddingVertical: 10,
   },
   attendanceCard: {
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_CARD,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.BLACK,
+    shadowColor: colors.SHADOW,
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.BG_BORDER,
   },
   attendanceAvatar: {
     width: 50,
@@ -48,7 +48,7 @@ const Styles = StyleSheet.create({
   attendanceAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.WHITE,
+    color: colors.TEXT_ON_PRIMARY,
   },
   attendanceInfo: {
     flex: 1,
@@ -56,12 +56,12 @@ const Styles = StyleSheet.create({
   attendanceUserName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.BLACK,
+    color: colors.TEXT_PRIMARY,
     marginBottom: 4,
   },
   attendanceDateTime: {
     fontSize: 12,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
   attendanceStatus: {
     width: 32,
@@ -89,7 +89,7 @@ const Styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
     marginBottom: 8,
   },
   emptySubtext: {

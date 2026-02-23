@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/header/Index';
 import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
 import Styles from './Styles';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
+import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return 'N/A';
@@ -63,7 +63,9 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
     <View style={Styles.emptyContainer}>
       <Text style={Styles.emptyIcon}>📊</Text>
       <Text style={Styles.emptyText}>No attendance records found</Text>
-      <Text style={Styles.emptySubtext}>Attendance records will appear here after marking attendance</Text>
+      <Text style={Styles.emptySubtext}>
+        Attendance records will appear here after marking attendance
+      </Text>
     </View>
   );
 };
@@ -78,7 +80,6 @@ const Report = () => {
   const fetchAttendance = async () => {
     try {
       const attendanceList = await getAllAttendance();
-      console.log(attendanceList);
       setAttendance(attendanceList);
     } catch (error) {
       console.error('Error fetching attendance:', error);
@@ -100,7 +101,7 @@ const Report = () => {
   };
 
   return (
-    <SafeAreaView style={Styles.container} edges={['bottom', 'left', 'right']}>
+    <SafeAreaWrapper>
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
         <FlatList
@@ -115,7 +116,7 @@ const Report = () => {
           showsVerticalScrollIndicator={false}
         />
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

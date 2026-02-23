@@ -7,6 +7,9 @@ import Header from '../../components/header/Index';
 import { RootStackParamList } from '../../navigation/AppContainer';
 import Styles from './Styles';
 import { createTable } from '../../sqlite';
+import colors from '../../constants/colors';
+import Icon from '../../components/icons/Index';
+import { ICON_MAP } from '../../components/icons/icons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,16 +28,16 @@ const Home = () => {
       <View style={Styles.content}>
         <View style={Styles.buttonContainer}>
           <TouchableOpacity
-            style={[Styles.button, Styles.buttonPrimary]}
+            style={[Styles.button]}
             onPress={() => navigation.navigate('Users')}
           >
-            <Text style={Styles.buttonIcon}>👤</Text>
+            <Icon name="users" size="xxl" color={colors.PRIMARY} strokeWidth={2}  />
             <Text style={Styles.buttonText}>Users</Text>
             <Text style={Styles.buttonSubtext}>Register new employee</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[Styles.button, Styles.buttonSuccess]}
+            style={[Styles.button]}
             onPress={() => navigation.navigate('Attendance')}
           >
             <Text style={Styles.buttonIcon}>📸</Text>
@@ -43,7 +46,7 @@ const Home = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[Styles.button, Styles.buttonInfo]}
+            style={[Styles.button]}
             onPress={() => navigation.navigate('Report')}
           >
             <Text style={Styles.buttonIcon}>📊</Text>

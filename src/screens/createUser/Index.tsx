@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import Styles from './Styles';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 import { openCamera } from '../../utils/camera';
 import { createUser } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';

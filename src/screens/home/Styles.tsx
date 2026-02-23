@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_DARK,
   },
   content: {
     flex: 1,
@@ -15,47 +15,33 @@ const Styles = StyleSheet.create({
     gap: 20,
   },
   button: {
-    backgroundColor: colors.WHITE,
     borderRadius: 16,
+    height: 170,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.BLACK,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: colors.SHADOW,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
     shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: colors.LIGHT_GRAY,
-  },
-  buttonPrimary: {
-    backgroundColor: colors.BLUE_LIGHT,
-    borderColor: colors.BLUE,
-  },
-  buttonSuccess: {
-    backgroundColor: colors.GREEN_LIGHT,
-    borderColor: colors.GREEN,
-  },
-  buttonInfo: {
-    backgroundColor: colors.PURPLE_LIGHT,
-    borderColor: colors.PURPLE,
+    elevation: 6,
+    backgroundColor: colors.CARD_A_BG,
+    borderColor: colors.CARD_A_BORDER,
+    borderWidth: 1.5,
   },
   buttonIcon: {
-    fontSize: 48,
+    fontSize: 46,
     marginBottom: 12,
   },
   buttonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.BLACK,
+    color: colors.TEXT_PRIMARY,
     marginBottom: 4,
   },
   buttonSubtext: {
     fontSize: 14,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
 });
 

@@ -1,42 +1,39 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_DARK,
   },
   content: {
     flex: 1,
     padding: 10,
   },
   createButton: {
-    backgroundColor: colors.PRIMARY,
-    borderRadius: 12,
-    padding: 8,
-    flexDirection: 'row',
+    backgroundColor: colors.BG_BORDER,
+    borderRadius: 50,
+    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    shadowColor: colors.BLACK,
+    shadowColor: colors.SHADOW,
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  createButtonIcon: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.WHITE,
-    marginRight: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+    position: 'absolute',
+    bottom: 10,
+    right: 15,
+    zIndex: 1000,
   },
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.WHITE,
+    color: colors.TEXT_ON_PRIMARY,
   },
   listContainer: {
     flexGrow: 1,
@@ -45,22 +42,22 @@ const Styles = StyleSheet.create({
     paddingBottom: 10,
   },
   userCard: {
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_CARD,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.BLACK,
+    shadowColor: colors.SHADOW,
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.BG_BORDER,
   },
   userAvatar: {
     width: 50,
@@ -74,7 +71,7 @@ const Styles = StyleSheet.create({
   userAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.WHITE,
+    color: colors.TEXT_ON_PRIMARY,
   },
   userInfo: {
     flex: 1,
@@ -82,12 +79,12 @@ const Styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.BLACK,
+    color: colors.TEXT_PRIMARY,
     marginBottom: 4,
   },
   userDate: {
     fontSize: 12,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
   emptyContainer: {
     flex: 1,
@@ -96,18 +93,18 @@ const Styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyIcon: {
-    fontSize: 64,
+    fontSize: 60,
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_PRIMARY,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: colors.GRAY,
+    color: colors.TEXT_LIGHT,
     textAlign: 'center',
   },
 });

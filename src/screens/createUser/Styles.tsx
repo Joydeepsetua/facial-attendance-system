@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_DARK,
   },
   scrollView: {
     flex: 1,
@@ -21,20 +21,20 @@ const Styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.BLACK,
+    color: colors.TEXT_PRIMARY,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.BG_BORDER,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: colors.BLACK,
-    backgroundColor: colors.WHITE,
+    color: colors.TEXT_PRIMARY,
+    backgroundColor: colors.BG_ELEVATED,
   },
   imagePicker: {
     borderWidth: 2,
-    borderColor: colors.LIGHT_GRAY,
+    borderColor: colors.PRIMARY,
     borderStyle: 'dashed',
     borderRadius: 12,
     overflow: 'hidden',
@@ -43,7 +43,7 @@ const Styles = StyleSheet.create({
     height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.LIGHT_GRAY_BG,
+    backgroundColor: colors.BG_CARD,
   },
   imagePlaceholderIcon: {
     fontSize: 48,
@@ -51,7 +51,7 @@ const Styles = StyleSheet.create({
   },
   imagePlaceholderText: {
     fontSize: 14,
-    color: colors.DARK_GRAY,
+    color: colors.TEXT_SECONDARY,
   },
   imagePreview: {
     width: '100%',
@@ -59,25 +59,25 @@ const Styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   createButton: {
-    backgroundColor: colors.PRIMARY,
+    backgroundColor: colors.PRIMARY_DARK,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: colors.BLACK,
+    shadowColor: colors.PRIMARY,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   createButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: colors.WHITE,
+    fontWeight: '700',
+    color: colors.TEXT_ON_PRIMARY,
   },
 });
 

@@ -7,6 +7,8 @@ import Header from '../../components/header/Index';
 import { RootStackParamList } from '../../navigation/AppContainer';
 import { getAllUsers, User } from '../../sqlite/service/user';
 import Styles from './Styles';
+import colors from '../../constants/colors';
+import Icon from '../../components/icons/Index';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -48,7 +50,7 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
   }
   return (
     <View style={Styles.emptyContainer}>
-      <Text style={Styles.emptyIcon}>👤</Text>
+      <Icon name="user" size="xl" color={colors.PRIMARY} strokeWidth={1.5}  />
       <Text style={Styles.emptyText}>No users found</Text>
       <Text style={Styles.emptySubtext}>Create your first user to get started</Text>
     </View>
@@ -94,8 +96,7 @@ const Users = () => {
           style={Styles.createButton}
           onPress={() => navigation.navigate('CreateUser')}
         >
-          <Text style={Styles.createButtonIcon}>+</Text>
-          <Text style={Styles.createButtonText}>Create New User</Text>
+          <Icon name="user-plus" size="xl" color={colors.PRIMARY} strokeWidth={1.5}  />
         </TouchableOpacity>
         <FlatList
           data={users}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import colors from './colors';
+import colors from '../constants/colors';
 
 let toastTimeout: ReturnType<typeof setTimeout> | null = null;
 let setToastState: ((message: string | null, type: 'success' | 'error') => void) | null = null;

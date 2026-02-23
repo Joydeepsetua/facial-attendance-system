@@ -1,15 +1,17 @@
 import { StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 
 const Style = StyleSheet.create({
   headerContainer: {
-    backgroundColor: colors.PRIMARY,
+    backgroundColor: colors.BG_CARD,
     justifyContent: 'space-between',
     alignItems: 'center',
     flexDirection: 'row',
     paddingHorizontal: 10,
     paddingVertical: 12,
     minHeight: 56,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.PRIMARY,
   },
   headLeft: {
     flex: 1,
@@ -23,7 +25,7 @@ const Style = StyleSheet.create({
   },
   iconText: {
     fontSize: 24,
-    color: colors.WHITE,
+    color: colors.PRIMARY,
   },
   titleContainer: {
     flex: 1,
@@ -32,9 +34,10 @@ const Style = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: colors.WHITE,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
     textTransform: 'capitalize',
+    letterSpacing: 0.5,
   },
   notificationBadge: {
     position: 'absolute',

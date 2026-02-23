@@ -7,7 +7,7 @@ import { openCamera } from '../../utils/camera';
 import { getAllUsers } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
 import Styles from './Styles';
-import colors from '../../utils/colors';
+import colors from '../../constants/colors';
 import { createAttendance } from '../../sqlite/service/attendance';
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
