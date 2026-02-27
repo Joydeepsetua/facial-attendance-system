@@ -1,57 +1,85 @@
-# Privacy Policy for Facial Attendance System
+# Privacy Policy for FaceTen
 
-**Last Updated:** February 6, 2026
+**Last Updated:** February 27, 2026
 
-This Privacy Policy describes how the **Facial Attendance System** ("we," "us," or "our") collects, stores, uses, and protects your information. This policy is drafted in compliance with the **Information Technology Act, 2000** and the **Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011** (SPDI Rules) of India.
+FaceTen ("App", "we", "our") respects your privacy and is committed to protecting your data.
 
-By using this Application, you agree to the collection and use of information in accordance with this policy.
-
-## 1. Information We Collect
-
-We collect only the specific data necessary for the functionality of the attendance system. This includes:
-
-### A. Personal Information
-*   **Name**: To identify the user for attendance records.
-*   **User ID**: A unique identifier assigned to each user.
-
-### B. Sensitive Personal Data or Information (SPDI)
-*   **Facial Biometrics**: The App captures your facial image to generate a mathematical representation (facial embedding) for recognition purposes. **We do not store the original raw images of your face; only the encrypted facial embeddings are stored.**
-
-### C. Device Permissions
-*   **Camera**: Required to capture facial images for attendance marking.
-*   **Storage**: Required to store the database and logs locally on your device.
-
-## 2. How We Use Your Information
-
-The information collected is used solely for the following purposes:
-*   To verify your identity during attendance marking.
-*   To maintain a record of your attendance (check-in/check-out times).
-*   To improve the accuracy of the facial recognition system locally.
-
-**We do not share, sell, or trade your personal or sensitive information with any third parties.**
-
-## 3. Data Storage and Security
-
-*   **Local Storage**: All data, including your name, attendance records, and facial embeddings, is stored **locally** on your device using a secure SQLite database.
-*   **No Cloud Transmission**: This is an offline-first application. Your biometric data is **never** transmitted to any external server or cloud storage by the App.
-*   **Security Measures**: We implement reasonable security practices to protect your data against unauthorized access, alteration, disclosure, or destruction.
-
-## 4. Retaining and Deleting Your Data
-
-*   **Retention**: We retain your data only for as long as necessary to fulfill the purposes of attendance tracking or as required by your organization's policy.
-*   **Deletion**: Since data is stored locally, you can delete all your data by clearing the App's storage or uninstalling the App.
-
-## 5. Changes to This Privacy Policy
-
-We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.
-
-## 6. Grievance Officer
-
-In accordance with the Information Technology Act, 2000 and Rules made thereunder, if you have any grievances or questions regarding this Privacy Policy, please contact:
-
-**Name**: Joydeep Setua
-**Email**: [Insert Email Address]
-**Address**: [Insert Physical Address if applicable]
+This Privacy Policy explains how the App processes biometric information in compliance with Google Play Developer Policies and applicable Indian laws.
 
 ---
-*This App is designed and developed for research and internal organizational use tailored for the Indian context.*
+
+## 1. Biometric Data Processing
+
+FaceTen uses facial recognition technology for attendance verification.
+
+- The App captures a face image using the device camera.
+- The image is processed **on-device only** to generate a mathematical facial embedding.
+- The original face image is **not permanently stored**.
+- Only the generated embedding is stored locally inside the device’s SQLite database.
+- Each record is associated with an auto-generated UUID.
+- No biometric data is stored on external servers.
+
+---
+
+## 2. Data Usage
+
+Biometric data is used strictly for:
+
+- Identity verification
+- Attendance marking (check-in / check-out)
+
+The App does NOT:
+
+- Sell data
+- Share data with third parties
+- Use cloud-based facial recognition services
+- Use data for advertising or analytics
+
+---
+
+## 3. Data Storage
+
+- All data remains stored locally on the device.
+- No cloud transmission occurs.
+- The App operates fully offline.
+
+---
+
+## 4. Permissions
+
+FaceTen may request:
+
+- **Camera Permission** – To capture face images for verification.
+- **Storage Permission** – To store encrypted embeddings locally.
+
+The App does not access contacts, messages, location, or other personal data.
+
+---
+
+## 5. Data Deletion
+
+Users may delete all stored data by:
+
+- Clearing the App storage, or
+- Uninstalling the App.
+
+This permanently removes all biometric embeddings and attendance records from the device.
+
+---
+
+## 6. Changes to This Policy
+
+We may update this Privacy Policy from time to time. Updates will be reflected by changing the "Last Updated" date.
+
+---
+
+## 7. Contact
+
+For questions or concerns:
+
+Joydeep Setua  
+zypido@gmail.com
+
+---
+
+FaceTen processes biometric data solely for offline attendance verification and does not transmit biometric information outside the device.
