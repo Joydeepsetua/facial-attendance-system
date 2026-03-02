@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, NativeModules } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
@@ -59,7 +59,7 @@ const CreateUser = () => {
   };
 
   return (
-    <SafeAreaView style={Styles.container}>
+    <SafeAreaWrapper>
       <Header title="Create User" showBack />
       <ScrollView style={Styles.scrollView} contentContainerStyle={Styles.scrollContent}>
         <View style={Styles.formContainer}>
@@ -93,7 +93,7 @@ const CreateUser = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

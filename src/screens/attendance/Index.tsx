@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { NativeModules } from 'react-native';
 import Header from '../../components/header/Index';
 import { openCamera } from '../../utils/camera';
@@ -114,7 +114,7 @@ const Attendance = () => {
 
 
   return (
-    <SafeAreaView style={Styles.container}>
+    <SafeAreaWrapper>
       <Header title="Mark Attendance" showBack />
       <View style={Styles.content}>
         {capturedImage && (
@@ -168,7 +168,7 @@ const Attendance = () => {
           </TouchableOpacity>
         )}
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

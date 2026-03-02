@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
@@ -23,8 +23,8 @@ const Home = () => {
   }, []);
 
   return (
-    <SafeAreaView style={Styles.container}>
-      <Header title="Facial Attendance" />
+    <SafeAreaWrapper>
+      <Header title="FaceTen" />
       <View style={Styles.content}>
         <View style={Styles.buttonContainer}>
           <TouchableOpacity
@@ -55,7 +55,7 @@ const Home = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

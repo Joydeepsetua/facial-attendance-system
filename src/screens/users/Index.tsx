@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
@@ -89,7 +89,7 @@ const Users = () => {
   };
 
   return (
-    <SafeAreaView style={Styles.container}>
+    <SafeAreaWrapper>
       <Header title="Users" showBack />
       <View style={Styles.content}>
         <TouchableOpacity
@@ -110,7 +110,7 @@ const Users = () => {
           showsVerticalScrollIndicator={false}
         />
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 
