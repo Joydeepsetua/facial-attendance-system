@@ -29,14 +29,16 @@ const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 
 const Attendance = () => {
   const [loading, setLoading] = useState(false);
-  const [matchedUser, setMatchedUser] = useState<{ uuid: string, name: string, similarity: number } | null>(null);
+  const [matchedUser, setMatchedUser] = useState<{ uuid: string, name: string, similarity: number, message?: string } | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
 
   const handleCapturePhoto = async () => {
     try {
       setLoading(true);
       setMatchedUser(null);
+      setAttendanceError(null);
 
       // Take photo
       const base64Image = await openCamera();
@@ -61,7 +63,7 @@ const Attendance = () => {
       }
 
       // Compare with each user
-      let bestMatch: { uuid: string, name: string; similarity: number } | null = null;
+      let bestMatch: { uuid: string, name: string; similarity: number, message?: string } | null = null;
       const threshold = 0.75; // Similarity threshold
 
       for (const user of users) {
@@ -82,13 +84,15 @@ const Attendance = () => {
       }
 
       if (bestMatch) {
-        const success = await createAttendance(bestMatch.uuid);        
-        if (!success) {
-          showToast('Failed to mark attendance', 'error');
+        const result = await createAttendance(bestMatch.uuid);        
+        if (!result.success) {
+          setAttendanceError(result.message);
+          showToast(result.message, 'error');
           return;
         }
+        bestMatch.message = result.message;
         setMatchedUser(bestMatch);
-        showToast(`Attendance marked for ${bestMatch.name}`, 'success');
+        showToast(result.message, 'success');
       } else {
         setMatchedUser(null);
         showToast('No matching user found', 'error');
@@ -110,6 +114,7 @@ const Attendance = () => {
     handleCapturePhoto();
     setCapturedImage(null);
     setMatchedUser(null);
+    setAttendanceError(null);
   };
 
 
@@ -138,12 +143,19 @@ const Attendance = () => {
             <View style={Styles.successCard}>
               <Text style={Styles.successIcon}>✅</Text>
               <Text style={Styles.similarityText}>
-                Attendance marked for
+                {matchedUser.message || 'Attendance marked for'}
               </Text>
               <Text style={Styles.matchedName}>{matchedUser.name}</Text>
               <Text style={Styles.similarityText}>
                 Match: {(matchedUser.similarity * 100).toFixed(1)}%
               </Text>
+            </View>
+          </View>
+        ) : attendanceError ? (
+          <View style={Styles.resultContainer}>
+            <View style={Styles.errorCard}>
+              <Text style={Styles.errorIcon}>❌</Text>
+              <Text style={Styles.noMatchText}>{attendanceError}</Text>
             </View>
           </View>
         ) : capturedImage && !loading ? (

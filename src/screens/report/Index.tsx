@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, SectionList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/header/Index';
 import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
@@ -7,44 +7,99 @@ import Styles from './Styles';
 import colors from '../../constants/colors';
 import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 
-const formatDateTime = (dateString?: string) => {
-  if (!dateString) return 'N/A';
+const formatTime = (dateString?: string) => {
+  if (!dateString) return '--:--';
   const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   });
 };
 
 const formatDate = (dateString?: string) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  const day = String(date.getDate()).padStart(2, '0');
+  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const calculateHours = (punchIn?: string, punchOut?: string) => {
+  if (!punchIn || !punchOut) return null;
+  const inTime = new Date(punchIn).getTime();
+  const outTime = new Date(punchOut).getTime();
+  const diffHours = (outTime - inTime) / (1000 * 60 * 60);
+  
+  const hours = Math.floor(diffHours);
+  const minutes = Math.floor((diffHours - hours) * 60);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+interface AttendanceSection {
+  title: string;
+  data: Attendance[];
+}
+
+const groupAttendanceByDate = (data: Attendance[]): AttendanceSection[] => {
+  const grouped: { [key: string]: Attendance[] } = {};
+  
+  data.forEach((item) => {
+    const dateToUse = item.punch_in || item.created_at;
+    const dateStr = formatDate(dateToUse);
+    
+    if (!grouped[dateStr]) {
+      grouped[dateStr] = [];
+    }
+    grouped[dateStr].push(item);
   });
+  
+  return Object.keys(grouped).map(date => ({
+    title: date,
+    data: grouped[date]
+  }));
 };
 
 const renderAttendanceItem = ({ item }: { item: Attendance }) => {
+  const hours = calculateHours(item.punch_in, item.punch_out);
+
   return (
     <View style={Styles.attendanceCard}>
       <View style={Styles.attendanceAvatar}>
+        {/* We can use an outlined circle or icon to match the UI later, 
+            for now keeping the initial avatar but changing styles in Styles.tsx */}
         <Text style={Styles.attendanceAvatarText}>
           {item.user_name?.charAt(0).toUpperCase() || '?'}
         </Text>
       </View>
       <View style={Styles.attendanceInfo}>
         <Text style={Styles.attendanceUserName}>{item.user_name || 'Unknown User'}</Text>
-        <Text style={Styles.attendanceDateTime}>
-          {formatDateTime(item.created_at)}
-        </Text>
-      </View>
-      <View style={Styles.attendanceStatus}>
-        <Text style={Styles.attendanceStatusIcon}>✓</Text>
+        
+        <View style={Styles.statsRow}>
+          <View style={Styles.statColumn}>
+            <Text style={Styles.statLabel}>In Time</Text>
+            <Text style={Styles.statValue}>{formatTime(item.punch_in)}</Text>
+          </View>
+          
+          <View style={Styles.arrowContainer}>
+            <Text style={Styles.arrowText}>→</Text>
+          </View>
+          
+          <View style={Styles.statColumn}>
+            <Text style={Styles.statLabel}>Out Time</Text>
+            <Text style={Styles.statValue}>{item.punch_out ? formatTime(item.punch_out) : '--:--'}</Text>
+          </View>
+          
+          <View style={Styles.dividerVertical} />
+          
+          <View style={Styles.statColumn}>
+            <Text style={Styles.statLabel}>Total</Text>
+            <Text style={Styles.statValue}>{hours || '--:--'}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -100,13 +155,22 @@ const Report = () => {
     fetchAttendance();
   };
 
+  const groupedAttendance = groupAttendanceByDate(attendance);
+
   return (
     <SafeAreaWrapper>
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
-        <FlatList
-          data={attendance}
+        <SectionList
+          sections={groupedAttendance}
           renderItem={renderAttendanceItem}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={Styles.sectionHeaderContainer}>
+              <View style={Styles.headerLine} />
+              <Text style={Styles.sectionHeaderText}>{title}</Text>
+              <View style={Styles.headerLine} />
+            </View>
+          )}
           keyExtractor={keyExtractor}
           contentContainerStyle={attendance.length === 0 ? Styles.listContainer : Styles.listContent}
           ListEmptyComponent={() => renderEmptyComponent({ loading })}
@@ -114,6 +178,7 @@ const Report = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={true}
         />
       </View>
     </SafeAreaWrapper>
