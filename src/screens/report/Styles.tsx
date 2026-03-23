@@ -12,8 +12,6 @@ const Styles = StyleSheet.create({
   },
   listContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   listContent: {
     paddingVertical: 10,
@@ -155,14 +153,43 @@ const Styles = StyleSheet.create({
   },
   dateFilterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 10,
   },
   dateInput: {
-    flex: 0.48,
+    flex: 1,
     fontSize: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateArrowContainer: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerText: {
+    color: colors.TEXT_PRIMARY,
+    fontSize: 14,
+  },
+  datePickerPlaceholder: {
+    color: colors.TEXT_SECONDARY,
+    fontSize: 14,
+  },
+  clearButton: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearButtonText: {
+    color: colors.PRIMARY,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

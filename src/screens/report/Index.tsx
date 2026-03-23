@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Header from '../../components/header/Index';
 import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
+import Icon from '../../components/icons/Index';
 
 const formatTime = (dateString?: string) => {
   if (!dateString) return '--:--';
@@ -45,6 +47,8 @@ interface AttendanceSection {
 }
 
 const groupAttendanceByDate = (data: Attendance[]): AttendanceSection[] => {
+  if (!data || data.length === 0) return [];
+
   const grouped: { [key: string]: Attendance[] } = {};
   
   data.forEach((item) => {
@@ -133,13 +137,32 @@ const Report = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [startDateObj, setStartDateObj] = useState<Date | null>(null);
+  const [endDateObj, setEndDateObj] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const limit = 20;
+
+  // Debounce search input
+  useEffect(() => {
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(searchText);
+    }, 500);
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [searchText]);
 
   const fetchAttendance = async (isLoadMore = false) => {
     if (!isLoadMore) {
@@ -147,16 +170,14 @@ const Report = () => {
     } else {
       setLoadingMore(true);
     }
-    
+
     try {
-      const offset = isLoadMore ? attendance.length : 0;
-      const newLogs = await getAllAttendance(searchQuery, startDate, endDate, limit, offset);
-      
-      if (newLogs.length < limit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+      const page = isLoadMore ? currentPage + 1 : 1;
+      const response = await getAllAttendance(debouncedSearch, startDate, endDate, limit, page);
+      const { data: newLogs, pagination } = response;
+
+      setCurrentPage(pagination.currentPage);
+      setHasMore(pagination.currentPage < pagination.totalPages);
 
       if (isLoadMore) {
         setAttendance(prev => [...prev, ...newLogs]);
@@ -172,16 +193,10 @@ const Report = () => {
     }
   };
 
-  // Debounced Search effect or button search
-  useEffect(() => {
-    // Only re-fetch from start when filters change
-    fetchAttendance(false);
-  }, [searchQuery, startDate, endDate]); 
-
   useFocusEffect(
     useCallback(() => {
       fetchAttendance(false);
-    }, [])
+    }, [debouncedSearch, startDate, endDate])
   );
 
   const onRefresh = () => {
@@ -190,42 +205,50 @@ const Report = () => {
   };
 
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore && attendance.length >= limit) {
+    if (!loadingMore && hasMore) {
       fetchAttendance(true);
     }
   };
 
-  const groupedAttendance = groupAttendanceByDate(attendance);
+  const toDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
-  // We need a simple header for the search functionality
-  const renderListHeader = () => (
-    <View style={Styles.filterContainer}>
-      <TextInput
-        style={Styles.searchInput}
-        placeholder="Search by name..."
-        placeholderTextColor={colors.TEXT_SECONDARY}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-      
-      <View style={Styles.dateFilterRow}>
-        <TextInput
-          style={[Styles.searchInput, Styles.dateInput]}
-          placeholder="Start (YYYY-MM-DD)"
-          placeholderTextColor={colors.TEXT_SECONDARY}
-          value={startDate}
-          onChangeText={setStartDate}
-        />
-        <TextInput
-          style={[Styles.searchInput, Styles.dateInput]}
-          placeholder="End (YYYY-MM-DD)"
-          placeholderTextColor={colors.TEXT_SECONDARY}
-          value={endDate}
-          onChangeText={setEndDate}
-        />
-      </View>
-    </View>
-  );
+  const formatDisplayDate = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const onStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowStartPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setStartDateObj(selectedDate);
+      setStartDate(toDateString(selectedDate));
+    }
+  };
+
+  const onEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEndPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setEndDateObj(selectedDate);
+      setEndDate(toDateString(selectedDate));
+    }
+  };
+
+  const clearDateFilters = () => {
+    setStartDateObj(null);
+    setEndDateObj(null);
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const groupedAttendance = groupAttendanceByDate(attendance);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -240,10 +263,70 @@ const Report = () => {
     <SafeAreaWrapper>
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
+        <View style={Styles.filterContainer}>
+          <TextInput
+            style={Styles.searchInput}
+            placeholder="Search by name..."
+            placeholderTextColor={colors.TEXT_SECONDARY}
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+
+          <View style={Styles.dateFilterRow}>
+            <TouchableOpacity
+              style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
+              onPress={() => setShowStartPicker(true)}>
+              <Icon name="calendar" size="sm" color={startDateObj ? colors.PRIMARY : colors.TEXT_SECONDARY} />
+              <Text style={startDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
+                {startDateObj ? formatDisplayDate(startDateObj) : 'Start Date'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={Styles.dateArrowContainer}>
+              <Icon name="arrow-left-right" size="sm" color={colors.TEXT_SECONDARY} />
+            </View>
+
+            <TouchableOpacity
+              style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
+              onPress={() => setShowEndPicker(true)}>
+              <Icon name="calendar" size="sm" color={endDateObj ? colors.PRIMARY : colors.TEXT_SECONDARY} />
+              <Text style={endDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
+                {endDateObj ? formatDisplayDate(endDateObj) : 'End Date'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {(startDateObj || endDateObj) && (
+            <TouchableOpacity style={Styles.clearButton} onPress={clearDateFilters}>
+              <Text style={Styles.clearButtonText}>Clear Dates</Text>
+            </TouchableOpacity>
+          )}
+
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDateObj || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onStartDateChange}
+              maximumDate={endDateObj || new Date()}
+            />
+          )}
+
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDateObj || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onEndDateChange}
+              minimumDate={startDateObj || undefined}
+              maximumDate={new Date()}
+            />
+          )}
+        </View>
+
         <SectionList
           sections={groupedAttendance}
           renderItem={renderAttendanceItem}
-          ListHeaderComponent={renderListHeader}
           ListFooterComponent={renderFooter}
           renderSectionHeader={({ section: { title } }) => (
             <View style={Styles.sectionHeaderContainer}>

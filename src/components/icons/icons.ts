@@ -1,6 +1,7 @@
 import {
   Home,
   ArrowLeft,
+  ArrowLeftRight,
   Users,
   User,
   Camera,
@@ -11,11 +12,13 @@ import {
   Image as ImageIcon,
   RefreshCw,
   ClipboardList,
+  Calendar,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
   home: Home,
   back: ArrowLeft,
+  "arrow-left-right": ArrowLeftRight,
   users: Users,
   user: User,
   camera: Camera,
@@ -26,6 +29,7 @@ export const ICON_MAP = {
   image: ImageIcon,
   retake: RefreshCw,
   report: ClipboardList,
+  calendar: Calendar,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;
