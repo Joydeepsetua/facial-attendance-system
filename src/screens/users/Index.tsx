@@ -1,14 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl, Modal, Pressable } from 'react-native';
 import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import { RootStackParamList } from '../../navigation/AppContainer';
-import { getAllUsers, User } from '../../sqlite/service/user';
+import { getAllUsers, deleteUser, User } from '../../sqlite/service/user';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import Icon from '../../components/icons/Index';
+import { showToast } from '../../utils/toast';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -20,24 +21,6 @@ const formatDate = (dateString?: string) => {
     month: 'short',
     day: 'numeric',
   });
-};
-
-const renderUserItem = ({ item }: { item: User }) => {
-  return (
-    <View style={Styles.userCard}>
-      <View style={Styles.userAvatar}>
-        <Text style={Styles.userAvatarText}>
-          {item.name.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View style={Styles.userInfo}>
-        <Text style={Styles.userName}>{item.name}</Text>
-        <Text style={Styles.userDate}>
-          Created: {formatDate(item.created_at)}
-        </Text>
-      </View>
-    </View>
-  );
 };
 
 const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
@@ -64,6 +47,8 @@ const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -88,6 +73,60 @@ const Users = () => {
     fetchUsers();
   };
 
+  const handleDelete = (user: User) => {
+    setActiveMenu(null);
+    setDeleteTarget(user);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const success = await deleteUser(deleteTarget.uuid);
+    if (success) {
+      showToast('User deleted successfully', 'success');
+      fetchUsers();
+    } else {
+      showToast('Failed to delete user', 'error');
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleEdit = (userUuid: string) => {
+    setActiveMenu(null);
+    navigation.navigate('EditUser', { userUuid });
+  };
+
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const menuUser = users.find(u => u.uuid === activeMenu);
+
+  const handleMenuPress = (item: User, event: any) => {
+    event.target.measure((_x: number, _y: number, _width: number, height: number, pageX: number, pageY: number) => {
+      setMenuPosition({ top: pageY + height, right: 20 });
+      setActiveMenu(item.uuid);
+    });
+  };
+
+  const renderUserItem = ({ item }: { item: User }) => (
+    <View style={Styles.userCard}>
+      <View style={Styles.userAvatar}>
+        <Text style={Styles.userAvatarText}>
+          {item.name.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <View style={Styles.userInfo}>
+        <Text style={Styles.userName}>{item.name}</Text>
+        <Text style={Styles.userDate}>
+          Created: {formatDate(item.created_at)}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={Styles.menuButton}
+        onPress={(e) => handleMenuPress(item, e)}
+      >
+        <Icon name="more-vertical" size="sm" color={colors.TEXT_SECONDARY} />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaWrapper>
       <Header title="Users" showBack />
@@ -96,7 +135,7 @@ const Users = () => {
           style={Styles.createButton}
           onPress={() => navigation.navigate('CreateUser')}
         >
-          <Icon name="user-plus" size="xl" color={colors.PRIMARY} strokeWidth={1.5}  />
+          <Icon name="user-plus" size="xl" color={colors.PRIMARY} strokeWidth={1.5} />
         </TouchableOpacity>
         <FlatList
           data={users}
@@ -109,6 +148,62 @@ const Users = () => {
           }
           showsVerticalScrollIndicator={false}
         />
+
+        <Modal
+          visible={activeMenu !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setActiveMenu(null)}
+        >
+          <Pressable style={Styles.overlay} onPress={() => setActiveMenu(null)}>
+            <View style={[Styles.popupMenu, { top: menuPosition.top, right: menuPosition.right }]}>
+              <TouchableOpacity style={Styles.popupMenuItem} onPress={() => menuUser && handleEdit(menuUser.uuid)}>
+                <Icon name="edit" size="xs" color={colors.TEXT_PRIMARY} />
+                <Text style={Styles.popupMenuText}>Edit</Text>
+              </TouchableOpacity>
+              <View style={Styles.popupMenuDivider} />
+              <TouchableOpacity style={Styles.popupMenuItem} onPress={() => menuUser && handleDelete(menuUser)}>
+                <Icon name="trash" size="xs" color={colors.RED} />
+                <Text style={[Styles.popupMenuText, Styles.popupMenuTextDanger]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        <Modal
+          visible={deleteTarget !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDeleteTarget(null)}
+        >
+          <Pressable style={Styles.deleteOverlay} onPress={() => setDeleteTarget(null)}>
+            <Pressable style={Styles.deleteModal}>
+              <View style={Styles.deleteIconContainer}>
+                <Icon name="trash" size="lg" color={colors.RED} />
+              </View>
+              <Text style={Styles.deleteTitle}>Delete User</Text>
+              <Text style={Styles.deleteMessage}>
+                Are you sure you want to delete{' '}
+                <Text style={Styles.deleteUserName}>{deleteTarget?.name}</Text>?
+                All associated attendance records will also be removed.
+              </Text>
+              <View style={Styles.deleteActions}>
+                <TouchableOpacity
+                  style={Styles.deleteButton}
+                  onPress={confirmDelete}
+                >
+                  <Text style={Styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={Styles.cancelButton}
+                  onPress={() => setDeleteTarget(null)}
+                >
+                  <Text style={Styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </SafeAreaWrapper>
   );

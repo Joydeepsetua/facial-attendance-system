@@ -13,6 +13,9 @@ import {
   RefreshCw,
   ClipboardList,
   Calendar,
+  EllipsisVertical,
+  Pencil,
+  Trash2,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -30,6 +33,9 @@ export const ICON_MAP = {
   retake: RefreshCw,
   report: ClipboardList,
   calendar: Calendar,
+  "more-vertical": EllipsisVertical,
+  edit: Pencil,
+  trash: Trash2,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;

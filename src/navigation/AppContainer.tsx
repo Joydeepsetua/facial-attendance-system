@@ -6,11 +6,13 @@ import CreateUser from '../screens/createUser/Index';
 import Attendance from '../screens/attendance/Index';
 import Report from '../screens/report/Index';
 import Users from '../screens/users/Index';
+import EditUser from '../screens/editUser/Index';
 
 
 export type RootStackParamList = {
     Home: undefined;
     CreateUser: undefined;
+    EditUser: { userUuid: string };
     Attendance: undefined;
     Report: undefined;
     Users: undefined;
@@ -27,6 +29,7 @@ function AppContainer(props: any) {
             <Stack.Screen name="Attendance" component={Attendance} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Report" component={Report} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Users" component={Users} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="EditUser" component={EditUser} options={{ animation: 'slide_from_right' }} />
         </Stack.Navigator>
     )
 }
