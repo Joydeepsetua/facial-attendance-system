@@ -42,6 +42,33 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
 
 const keyExtractor = (item: User) => item.uuid;
 
+interface UserItemProps {
+  item: User;
+  onMenuPress: (item: User, event: any) => void;
+}
+
+const UserItem = React.memo(({ item, onMenuPress }: UserItemProps) => (
+  <View style={Styles.userCard}>
+    <View style={Styles.userAvatar}>
+      <Text style={Styles.userAvatarText}>
+        {item.name.charAt(0).toUpperCase()}
+      </Text>
+    </View>
+    <View style={Styles.userInfo}>
+      <Text style={Styles.userName}>{item.name}</Text>
+      <Text style={Styles.userDate}>
+        Created: {formatDate(item.created_at)}
+      </Text>
+    </View>
+    <TouchableOpacity
+      style={Styles.menuButton}
+      onPress={(e) => onMenuPress(item, e)}
+    >
+      <Icon name="more-vertical" size="sm" color={colors.TEXT_SECONDARY} />
+    </TouchableOpacity>
+  </View>
+));
+
 const Users = () => {
   const navigation = useNavigation<NavigationProp>();
   const [users, setUsers] = useState<User[]>([]);
@@ -49,6 +76,9 @@ const Users = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+
+  const menuUser = users.find(u => u.uuid === activeMenu);
 
   const fetchUsers = async () => {
     try {
@@ -73,10 +103,10 @@ const Users = () => {
     fetchUsers();
   };
 
-  const handleDelete = (user: User) => {
+  const handleDelete = useCallback((user: User) => {
     setActiveMenu(null);
     setDeleteTarget(user);
-  };
+  }, []);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -90,42 +120,21 @@ const Users = () => {
     setDeleteTarget(null);
   };
 
-  const handleEdit = (userUuid: string) => {
+  const handleEdit = useCallback((userUuid: string) => {
     setActiveMenu(null);
     navigation.navigate('EditUser', { userUuid });
-  };
+  }, [navigation]);
 
-  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
-  const menuUser = users.find(u => u.uuid === activeMenu);
-
-  const handleMenuPress = (item: User, event: any) => {
-    event.target.measure((_x: number, _y: number, _width: number, height: number, pageX: number, pageY: number) => {
+  const handleMenuPress = useCallback((item: User, event: any) => {
+    event.target.measure((_x: number, _y: number, _width: number, height: number, _pageX: number, pageY: number) => {
       setMenuPosition({ top: pageY + height, right: 20 });
       setActiveMenu(item.uuid);
     });
-  };
+  }, []);
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <View style={Styles.userCard}>
-      <View style={Styles.userAvatar}>
-        <Text style={Styles.userAvatarText}>
-          {item.name.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View style={Styles.userInfo}>
-        <Text style={Styles.userName}>{item.name}</Text>
-        <Text style={Styles.userDate}>
-          Created: {formatDate(item.created_at)}
-        </Text>
-      </View>
-      <TouchableOpacity
-        style={Styles.menuButton}
-        onPress={(e) => handleMenuPress(item, e)}
-      >
-        <Icon name="more-vertical" size="sm" color={colors.TEXT_SECONDARY} />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderUserItem = useCallback(({ item }: { item: User }) => (
+    <UserItem item={item} onMenuPress={handleMenuPress} />
+  ), [handleMenuPress]);
 
   return (
     <SafeAreaWrapper>
