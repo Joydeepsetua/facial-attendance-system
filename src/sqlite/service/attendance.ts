@@ -15,6 +15,16 @@ export interface Attendance {
   is_active?: boolean;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+  };
+}
+
 // Helper function to format date for SQLite (YYYY-MM-DD HH:MM:SS)
 const formatDateForSQLite = (date: Date): string => {
   const year = date.getFullYear();
@@ -99,53 +109,110 @@ export const createAttendance = async (userId: string): Promise<{ success: boole
   });
 };
 
-// GET ALL ATTENDANCE RECORDS
-export const getAllAttendance = async (): Promise<Attendance[]> => {
+// GET ALL ATTENDANCE RECORDS (With Filters & API-like Pagination)
+export const getAllAttendance = async (
+  searchQuery: string = "",
+  startDate: string = "",
+  endDate: string = "",
+  limit: number = 20,
+  page: number = 1
+): Promise<PaginatedResponse<Attendance>> => {
   return new Promise((resolve) => {
-    const query = `SELECT 
-      a.id, 
-      a.user_id, 
-      a.punch_in,
-      a.punch_out,
-      a.created_at, 
-      a.is_active,
-      u.name as user_name
-    FROM ${TN_ATTENDANCE} a
-    INNER JOIN ${TN_USERS} u ON a.user_id = u.uuid
-    WHERE a.is_active = 1 AND u.is_active = 1
-    ORDER BY a.created_at DESC`;
+    // Shared WHERE clause and params for both COUNT and SELECT
+    let whereClause = `WHERE a.is_active = 1 AND u.is_active = 1`;
+    const params: any[] = [];
     
+    // 1. Search by Name
+    if (searchQuery.trim() !== "") {
+      whereClause += ` AND u.name LIKE ?`;
+      params.push(`%${searchQuery.trim()}%`);
+    }
+
+    // 2. Date Range Filter
+    if (startDate && endDate) {
+      whereClause += ` AND substr(a.created_at, 1, 10) BETWEEN ? AND ?`;
+      params.push(startDate, endDate);
+    } else if (startDate) {
+      whereClause += ` AND substr(a.created_at, 1, 10) >= ?`;
+      params.push(startDate);
+    } else if (endDate) {
+      whereClause += ` AND substr(a.created_at, 1, 10) <= ?`;
+      params.push(endDate);
+    }
+
+    // Step 1: Get Total Count
+    const countQuery = `SELECT COUNT(*) as total FROM ${TN_ATTENDANCE} a INNER JOIN ${TN_USERS} u ON a.user_id = u.uuid ${whereClause}`;
+
     db.transaction((tx) => {
       tx.executeSql(
-        query,
-        [],
-        (_tx, result) => {
-          const attendance: Attendance[] = [];
+        countQuery,
+        params,
+        (_tx, countResult) => {
+          const totalCount = countResult.rows.item(0).total;
+          const totalPages = Math.ceil(totalCount / limit);
+          const offset = (page - 1) * limit;
+
+          // Step 2: Get Paginated Data
+          const dataQuery = `SELECT 
+            a.id, 
+            a.user_id, 
+            a.punch_in,
+            a.punch_out,
+            a.created_at, 
+            a.is_active,
+            u.name as user_name
+          FROM ${TN_ATTENDANCE} a
+          INNER JOIN ${TN_USERS} u ON a.user_id = u.uuid
+          ${whereClause}
+          ORDER BY a.created_at DESC 
+          LIMIT ? OFFSET ?`;
           
-          for (let i = 0; i < result.rows.length; i++) {
-            const item = result.rows.item(i);
-            attendance.push({
-              id: item.id,
-              user_id: item.user_id,
-              user_name: item.user_name,
-              punch_in: item.punch_in,
-              punch_out: item.punch_out,
-              created_at: item.created_at,
-              is_active: item.is_active === 1,
-            });
-          }
-          
-          resolve(attendance);
+          const dataParams = [...params, limit, offset];
+
+          _tx.executeSql(
+            dataQuery,
+            dataParams,
+            (__tx, dataResult) => {
+              const attendance: Attendance[] = [];
+              for (let i = 0; i < dataResult.rows.length; i++) {
+                const item = dataResult.rows.item(i);
+                attendance.push({
+                  id: item.id,
+                  user_id: item.user_id,
+                  user_name: item.user_name,
+                  punch_in: item.punch_in,
+                  punch_out: item.punch_out,
+                  created_at: item.created_at,
+                  is_active: item.is_active === 1,
+                });
+              }
+              
+              resolve({
+                data: attendance,
+                pagination: {
+                  currentPage: page,
+                  totalPages,
+                  totalCount,
+                  limit,
+                }
+              });
+            },
+            (__t, error) => {
+              console.error("Error fetching attendance data:", error);
+              resolve({ data: [], pagination: { currentPage: page, totalPages: 0, totalCount: 0, limit } });
+              return false;
+            }
+          );
         },
         (_t, error) => {
-          console.error("Error fetching attendance list:", error);
-          resolve([]);
+          console.error("Error fetching attendance count:", error);
+          resolve({ data: [], pagination: { currentPage: page, totalPages: 0, totalCount: 0, limit } });
           return false;
         }
       );
     }, (error) => {
       console.error("Transaction error:", error);
-      resolve([]);
+      resolve({ data: [], pagination: { currentPage: page, totalPages: 0, totalCount: 0, limit } });
     });
   });
 };

@@ -139,6 +139,31 @@ const Styles = StyleSheet.create({
     textTransform: 'uppercase',
     paddingHorizontal: 12,
   },
+  filterContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  searchInput: {
+    backgroundColor: colors.BG_CARD,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: colors.TEXT_PRIMARY,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: colors.BG_BORDER,
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  dateInput: {
+    flex: 0.48,
+    fontSize: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
 });
 
 export default Styles;

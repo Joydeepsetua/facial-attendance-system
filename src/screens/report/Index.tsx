@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, SectionList, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/header/Index';
 import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
@@ -130,32 +130,111 @@ const keyExtractor = (item: Attendance) => item.id;
 const Report = () => {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchAttendance = async () => {
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const limit = 20;
+
+  const fetchAttendance = async (isLoadMore = false) => {
+    if (!isLoadMore) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    
     try {
-      const attendanceList = await getAllAttendance();
-      setAttendance(attendanceList);
+      const offset = isLoadMore ? attendance.length : 0;
+      const newLogs = await getAllAttendance(searchQuery, startDate, endDate, limit, offset);
+      
+      if (newLogs.length < limit) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      if (isLoadMore) {
+        setAttendance(prev => [...prev, ...newLogs]);
+      } else {
+        setAttendance(newLogs);
+      }
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   };
 
+  // Debounced Search effect or button search
+  useEffect(() => {
+    // Only re-fetch from start when filters change
+    fetchAttendance(false);
+  }, [searchQuery, startDate, endDate]); 
+
   useFocusEffect(
     useCallback(() => {
-      fetchAttendance();
+      fetchAttendance(false);
     }, [])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchAttendance();
+    fetchAttendance(false);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore && attendance.length >= limit) {
+      fetchAttendance(true);
+    }
   };
 
   const groupedAttendance = groupAttendanceByDate(attendance);
+
+  // We need a simple header for the search functionality
+  const renderListHeader = () => (
+    <View style={Styles.filterContainer}>
+      <TextInput
+        style={Styles.searchInput}
+        placeholder="Search by name..."
+        placeholderTextColor={colors.TEXT_SECONDARY}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+      
+      <View style={Styles.dateFilterRow}>
+        <TextInput
+          style={[Styles.searchInput, Styles.dateInput]}
+          placeholder="Start (YYYY-MM-DD)"
+          placeholderTextColor={colors.TEXT_SECONDARY}
+          value={startDate}
+          onChangeText={setStartDate}
+        />
+        <TextInput
+          style={[Styles.searchInput, Styles.dateInput]}
+          placeholder="End (YYYY-MM-DD)"
+          placeholderTextColor={colors.TEXT_SECONDARY}
+          value={endDate}
+          onChangeText={setEndDate}
+        />
+      </View>
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color={colors.PRIMARY} />
+      </View>
+    );
+  };
 
   return (
     <SafeAreaWrapper>
@@ -164,6 +243,8 @@ const Report = () => {
         <SectionList
           sections={groupedAttendance}
           renderItem={renderAttendanceItem}
+          ListHeaderComponent={renderListHeader}
+          ListFooterComponent={renderFooter}
           renderSectionHeader={({ section: { title } }) => (
             <View style={Styles.sectionHeaderContainer}>
               <View style={Styles.headerLine} />
@@ -179,6 +260,8 @@ const Report = () => {
           }
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={true}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
         />
       </View>
     </SafeAreaWrapper>
