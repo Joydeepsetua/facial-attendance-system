@@ -57,7 +57,7 @@ const Styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.TEXT_PRIMARY,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   statsRow: {
     flexDirection: 'row',
@@ -122,7 +122,7 @@ const Styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
+    marginVertical: 8,
   },
   headerLine: {
     flex: 1,
@@ -138,37 +138,55 @@ const Styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   filterContainer: {
-    marginBottom: 16,
     paddingHorizontal: 4,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.BG_CARD,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.BG_BORDER,
+  },
+  searchInputField: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.TEXT_PRIMARY,
+    fontSize: 14,
+  },
+  searchClearButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   searchInput: {
     backgroundColor: colors.BG_CARD,
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     color: colors.TEXT_PRIMARY,
-    fontSize: 16,
+    fontSize: 14,
     borderWidth: 1,
     borderColor: colors.BG_BORDER,
   },
   dateFilterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   dateInput: {
     flex: 1,
-    fontSize: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    fontSize: 13,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   datePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   dateArrowContainer: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -183,8 +201,7 @@ const Styles = StyleSheet.create({
   clearButton: {
     alignSelf: 'flex-end',
     marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 8
   },
   clearButtonText: {
     color: colors.PRIMARY,

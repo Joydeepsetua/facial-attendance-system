@@ -264,13 +264,20 @@ const Report = () => {
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
         <View style={Styles.filterContainer}>
-          <TextInput
-            style={Styles.searchInput}
-            placeholder="Search by name..."
-            placeholderTextColor={colors.TEXT_SECONDARY}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
+          <View style={Styles.searchContainer}>
+            <TextInput
+              style={Styles.searchInputField}
+              placeholder="Search by name..."
+              placeholderTextColor={colors.TEXT_SECONDARY}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            {searchText.length > 0 && (
+              <TouchableOpacity style={Styles.searchClearButton} onPress={() => setSearchText('')}>
+                <Icon name="close" size="sm" color={colors.TEXT_SECONDARY} />
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={Styles.dateFilterRow}>
             <TouchableOpacity
