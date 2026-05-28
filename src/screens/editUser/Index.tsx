@@ -4,11 +4,13 @@ import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
+import DuplicateFaceModal from '../../components/duplicateFaceModal/Index';
 import Styles from '../createUser/Styles';
 import colors from '../../constants/colors';
 import { openCamera } from '../../utils/camera';
 import { getUserByUuid, updateUser } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
+import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { RootStackParamList } from '../../navigation/AppContainer';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -23,6 +25,8 @@ const EditUser = () => {
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageChanged, setImageChanged] = useState(false);
+  const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
+  const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -45,6 +49,18 @@ const EditUser = () => {
     setImageChanged(true);
   };
 
+  const persistUpdate = async (newEmbedding?: number[]) => {
+    const success = await updateUser(userUuid, fullName.trim(), newEmbedding);
+    if (success) {
+      showToast('User updated successfully!', 'success');
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    } else {
+      showToast('Failed to update user', 'error');
+    }
+  };
+
   const handleUpdateUser = async () => {
     if (!fullName.trim()) {
       Alert.alert('Validation', 'Please enter full name');
@@ -57,17 +73,16 @@ const EditUser = () => {
       if (imageChanged && base64Image) {
         const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
         newEmbedding = embedding.split(',').map(Number);
+
+        const duplicates = await findDuplicateUsers(newEmbedding!, userUuid);
+        if (duplicates.length > 0) {
+          setPendingEmbedding(newEmbedding!);
+          setDuplicateMatches(duplicates);
+          return;
+        }
       }
 
-      const success = await updateUser(userUuid, fullName.trim(), newEmbedding);
-      if (success) {
-        showToast('User updated successfully!', 'success');
-        setTimeout(() => {
-          navigation.goBack();
-        }, 500);
-      } else {
-        showToast('Failed to update user', 'error');
-      }
+      await persistUpdate(newEmbedding);
     } catch (error: any) {
       console.error('Error updating user:', error);
       const errorMessage = error?.message || error?.toString() || '';
@@ -77,6 +92,20 @@ const EditUser = () => {
         showToast('Failed to update user', 'error');
       }
     }
+  };
+
+  const handleConfirmDuplicate = async () => {
+    const embeddingArray = pendingEmbedding;
+    setDuplicateMatches([]);
+    setPendingEmbedding(null);
+    if (embeddingArray) {
+      await persistUpdate(embeddingArray);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setDuplicateMatches([]);
+    setPendingEmbedding(null);
   };
 
   if (loading) {
@@ -125,6 +154,14 @@ const EditUser = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <DuplicateFaceModal
+        visible={duplicateMatches.length > 0}
+        matches={duplicateMatches}
+        onCancel={handleCancelDuplicate}
+        onConfirm={handleConfirmDuplicate}
+        confirmLabel="Update Anyway"
+      />
     </SafeAreaWrapper>
   );
 };

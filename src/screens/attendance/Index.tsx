@@ -6,26 +6,10 @@ import Header from '../../components/header/Index';
 import { openCamera } from '../../utils/camera';
 import { getAllUsers } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
+import { findBestMatch } from '../../utils/face';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import { createAttendance } from '../../sqlite/service/attendance';
-
-const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-
-  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-  if (denominator === 0) return 0;
-
-  return dotProduct / denominator;
-};
 
 const Attendance = () => {
   const [loading, setLoading] = useState(false);
@@ -62,26 +46,9 @@ const Attendance = () => {
         return;
       }
 
-      // Compare with each user
-      let bestMatch: { uuid: string, name: string; similarity: number, message?: string } | null = null;
-      const threshold = 0.75; // Similarity threshold
-
-      for (const user of users) {
-        try {
-          const userEmbedding = JSON.parse(user.embedding) as number[];
-          const sim = cosineSimilarity(capturedEmbedding, userEmbedding);
-
-          if (sim > threshold && (!bestMatch || sim > bestMatch.similarity)) {
-            bestMatch = {
-              uuid: user.uuid,
-              name: user.name,
-              similarity: sim,
-            };
-          }
-        } catch (error) {
-          console.error('Error parsing user embedding:', error);
-        }
-      }
+      const match = findBestMatch(capturedEmbedding, users);
+      const bestMatch: { uuid: string; name: string; similarity: number; message?: string } | null =
+        match ? { ...match } : null;
 
       if (bestMatch) {
         const result = await createAttendance(bestMatch.uuid);        

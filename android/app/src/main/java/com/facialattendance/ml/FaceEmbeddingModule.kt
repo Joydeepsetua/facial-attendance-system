@@ -6,14 +6,26 @@ import com.google.mlkit.vision.face.*
 
 object FaceDetectorHelper {
 
-    private val detector by lazy {
-        val options = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-            .build()
+    private val fastDetector by lazy {
+        FaceDetection.getClient(
+            FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                .setMinFaceSize(0.1f)
+                .build()
+        )
+    }
 
-        FaceDetection.getClient(options)
+    private val accurateDetector by lazy {
+        FaceDetection.getClient(
+            FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                .setMinFaceSize(0.1f)
+                .build()
+        )
     }
 
     fun detectAndCropFace(
@@ -21,30 +33,46 @@ object FaceDetectorHelper {
         onSuccess: (Bitmap) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val image = InputImage.fromBitmap(bitmap, 0)
+        runDetector(fastDetector, bitmap,
+            onSuccess = onSuccess,
+            onEmpty = {
+                runDetector(
+                    detector = accurateDetector,
+                    bitmap = bitmap,
+                    onSuccess = onSuccess,
+                    onEmpty = { onFailure(Exception("No face detected")) },
+                    onFailure = onFailure
+                )
+            },
+            onFailure = onFailure
+        )
+    }
 
+    private fun runDetector(
+        detector: FaceDetector,
+        bitmap: Bitmap,
+        onSuccess: (Bitmap) -> Unit,
+        onEmpty: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val image = InputImage.fromBitmap(bitmap, 0)
         detector.process(image)
             .addOnSuccessListener { faces ->
                 if (faces.isEmpty()) {
-                    onFailure(Exception("No face detected"))
+                    onEmpty()
                     return@addOnSuccessListener
                 }
-
-                val face = faces[0]
+                val face = faces.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }!!
                 val box = face.boundingBox
-
                 val cropped = BitmapUtils.cropFace(
                     bitmap,
-                    box.left.coerceAtLeast(0),
-                    box.top.coerceAtLeast(0),
-                    box.width().coerceAtMost(bitmap.width),
-                    box.height().coerceAtMost(bitmap.height)
+                    box.left,
+                    box.top,
+                    box.width(),
+                    box.height()
                 )
-
                 onSuccess(cropped)
             }
-            .addOnFailureListener {
-                onFailure(it)
-            }
+            .addOnFailureListener { onFailure(it) }
     }
 }

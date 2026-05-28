@@ -4,11 +4,13 @@ import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
+import DuplicateFaceModal from '../../components/duplicateFaceModal/Index';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import { openCamera } from '../../utils/camera';
 import { createUser } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
+import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { RootStackParamList } from '../../navigation/AppContainer';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -17,11 +19,25 @@ const CreateUser = () => {
   const navigation = useNavigation<NavigationProp>();
   const [fullName, setFullName] = useState('');
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
+  const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
 
   const handleImagePicker = async () => {
     const base64Image = await openCamera();
     if (!base64Image) return;
     setBase64Image(base64Image);
+  };
+
+  const saveUser = async (embeddingArray: number[]) => {
+    const success = await createUser(fullName, embeddingArray);
+    if (success) {
+      showToast('User created successfully!', 'success');
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    } else {
+      showToast('Failed to create user', 'error');
+    }
   };
 
   const handleCreateUser = async () => {
@@ -35,18 +51,16 @@ const CreateUser = () => {
     }
     try {
       const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
-      console.log('Embedding:', embedding);
       const embeddingArray = embedding.split(',').map(Number);
-      console.log('Embedding Array:', embeddingArray);
-      const success = await createUser(fullName, embeddingArray);
-      if (success) {
-        showToast('User created successfully!', 'success');
-        setTimeout(() => {
-          navigation.goBack();
-        }, 500);
-      } else {
-        showToast('Failed to create user', 'error');
+
+      const duplicates = await findDuplicateUsers(embeddingArray);
+      if (duplicates.length > 0) {
+        setPendingEmbedding(embeddingArray);
+        setDuplicateMatches(duplicates);
+        return;
       }
+
+      await saveUser(embeddingArray);
     } catch (error: any) {
       console.error('Error creating user:', error);
       const errorMessage = error?.message || error?.toString() || '';
@@ -56,6 +70,20 @@ const CreateUser = () => {
         showToast('Failed to create user', 'error');
       }
     }
+  };
+
+  const handleConfirmDuplicate = async () => {
+    const embeddingArray = pendingEmbedding;
+    setDuplicateMatches([]);
+    setPendingEmbedding(null);
+    if (embeddingArray) {
+      await saveUser(embeddingArray);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setDuplicateMatches([]);
+    setPendingEmbedding(null);
   };
 
   return (
@@ -93,6 +121,13 @@ const CreateUser = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <DuplicateFaceModal
+        visible={duplicateMatches.length > 0}
+        matches={duplicateMatches}
+        onCancel={handleCancelDuplicate}
+        onConfirm={handleConfirmDuplicate}
+      />
     </SafeAreaWrapper>
   );
 };
