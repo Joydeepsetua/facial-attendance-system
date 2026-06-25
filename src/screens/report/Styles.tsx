@@ -2,13 +2,13 @@ import { StyleSheet } from 'react-native';
 import colors from '../../constants/colors';
 
 const Styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: colors.BG_DARK,
+    backgroundColor: colors.SURFACE_BG,
   },
   content: {
     flex: 1,
-    padding: 10,
+    padding: 12,
   },
   listContainer: {
     flexGrow: 1,
@@ -17,46 +17,39 @@ const Styles = StyleSheet.create({
     paddingVertical: 10,
   },
   attendanceCard: {
-    backgroundColor: colors.BG_CARD,
+    backgroundColor: colors.SURFACE_CARD,
     padding: 12,
     marginBottom: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.BG_BORDER,
-    shadowColor: colors.SHADOW,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    shadowColor: '#1E2A4A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
     elevation: 3,
   },
   attendanceAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.BG_CARD,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.BRAND,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: colors.BG_BORDER,
   },
   attendanceAvatarText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: colors.TEXT_PRIMARY,
+    color: '#FFFFFF',
   },
   attendanceInfo: {
     flex: 1,
   },
   attendanceUserName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.TEXT_PRIMARY,
+    fontWeight: '700',
+    color: colors.SURFACE_TEXT,
     marginBottom: 4,
   },
   statsRow: {
@@ -76,25 +69,25 @@ const Styles = StyleSheet.create({
   },
   arrowText: {
     fontSize: 18,
-    color: colors.TEXT_SECONDARY,
+    color: colors.SURFACE_TEXT_MUTED,
     fontWeight: 'bold',
   },
   dividerVertical: {
     width: 1,
     height: 30,
-    backgroundColor: colors.BG_BORDER,
+    backgroundColor: colors.SURFACE_BORDER,
     marginHorizontal: 12,
   },
   statLabel: {
     fontSize: 11,
-    color: colors.TEXT_SECONDARY,
+    color: colors.SURFACE_TEXT_MUTED,
     marginBottom: 4,
     fontWeight: '500',
   },
   statValue: {
     fontSize: 14,
-    color: colors.TEXT_PRIMARY,
-    fontWeight: '600',
+    color: colors.SURFACE_TEXT,
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,
@@ -108,13 +101,13 @@ const Styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: colors.TEXT_SECONDARY,
+    fontWeight: '700',
+    color: colors.SURFACE_TEXT,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: colors.GRAY,
+    color: colors.SURFACE_TEXT_MUTED,
     textAlign: 'center',
   },
   sectionHeaderContainer: {
@@ -127,32 +120,31 @@ const Styles = StyleSheet.create({
   headerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.BG_BORDER,
-    opacity: 0.5,
+    backgroundColor: colors.SURFACE_BORDER,
   },
   sectionHeaderText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: colors.TEXT_SECONDARY,
+    fontWeight: '700',
+    color: colors.SURFACE_TEXT_MUTED,
     textTransform: 'uppercase',
     paddingHorizontal: 12,
   },
   filterContainer: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.BG_CARD,
-    borderRadius: 8,
+    backgroundColor: colors.SURFACE_CARD,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.BG_BORDER,
+    borderColor: colors.SURFACE_BORDER,
   },
   searchInputField: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.TEXT_PRIMARY,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    color: colors.SURFACE_TEXT,
     fontSize: 14,
   },
   searchClearButton: {
@@ -160,14 +152,14 @@ const Styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchInput: {
-    backgroundColor: colors.BG_CARD,
-    borderRadius: 8,
+    backgroundColor: colors.SURFACE_CARD,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: colors.TEXT_PRIMARY,
+    color: colors.SURFACE_TEXT,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: colors.BG_BORDER,
+    borderColor: colors.SURFACE_BORDER,
   },
   dateFilterRow: {
     flexDirection: 'row',
@@ -177,7 +169,7 @@ const Styles = StyleSheet.create({
   dateInput: {
     flex: 1,
     fontSize: 13,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 10,
   },
   datePickerButton: {
@@ -191,20 +183,20 @@ const Styles = StyleSheet.create({
     alignItems: 'center',
   },
   datePickerText: {
-    color: colors.TEXT_PRIMARY,
+    color: colors.SURFACE_TEXT,
     fontSize: 14,
   },
   datePickerPlaceholder: {
-    color: colors.TEXT_SECONDARY,
+    color: colors.SURFACE_TEXT_MUTED,
     fontSize: 14,
   },
   clearButton: {
     alignSelf: 'flex-end',
     marginTop: 8,
-    paddingHorizontal: 8
+    paddingHorizontal: 8,
   },
   clearButtonText: {
-    color: colors.PRIMARY,
+    color: colors.BRAND,
     fontSize: 13,
     fontWeight: '600',
   },

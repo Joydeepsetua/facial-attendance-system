@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Header from '../../components/header/Index';
 import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
 import Styles from './Styles';
 import colors from '../../constants/colors';
-import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
 import Icon from '../../components/icons/Index';
 
 const formatTime = (dateString?: string) => {
@@ -113,7 +113,7 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
   if (loading) {
     return (
       <View style={Styles.emptyContainer}>
-        <ActivityIndicator size="large" color={colors.PRIMARY} />
+        <ActivityIndicator size="large" color={colors.BRAND} />
         <Text style={Styles.emptyText}>Loading attendance records...</Text>
       </View>
     );
@@ -254,13 +254,14 @@ const Report = () => {
     if (!loadingMore) return null;
     return (
       <View style={{ paddingVertical: 20 }}>
-        <ActivityIndicator size="small" color={colors.PRIMARY} />
+        <ActivityIndicator size="small" color={colors.BRAND} />
       </View>
     );
   };
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
         <View style={Styles.filterContainer}>
@@ -268,13 +269,13 @@ const Report = () => {
             <TextInput
               style={Styles.searchInputField}
               placeholder="Search by name..."
-              placeholderTextColor={colors.TEXT_SECONDARY}
+              placeholderTextColor={colors.SURFACE_TEXT_MUTED}
               value={searchText}
               onChangeText={setSearchText}
             />
             {searchText.length > 0 && (
               <TouchableOpacity style={Styles.searchClearButton} onPress={() => setSearchText('')}>
-                <Icon name="close" size="sm" color={colors.TEXT_SECONDARY} />
+                <Icon name="close" size="sm" color={colors.SURFACE_TEXT_MUTED} />
               </TouchableOpacity>
             )}
           </View>
@@ -283,20 +284,20 @@ const Report = () => {
             <TouchableOpacity
               style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
               onPress={() => setShowStartPicker(true)}>
-              <Icon name="calendar" size="sm" color={startDateObj ? colors.PRIMARY : colors.TEXT_SECONDARY} />
+              <Icon name="calendar" size="sm" color={startDateObj ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
               <Text style={startDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
                 {startDateObj ? formatDisplayDate(startDateObj) : 'Start Date'}
               </Text>
             </TouchableOpacity>
 
             <View style={Styles.dateArrowContainer}>
-              <Icon name="arrow-left-right" size="sm" color={colors.TEXT_SECONDARY} />
+              <Icon name="arrow-left-right" size="sm" color={colors.SURFACE_TEXT_MUTED} />
             </View>
 
             <TouchableOpacity
               style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
               onPress={() => setShowEndPicker(true)}>
-              <Icon name="calendar" size="sm" color={endDateObj ? colors.PRIMARY : colors.TEXT_SECONDARY} />
+              <Icon name="calendar" size="sm" color={endDateObj ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
               <Text style={endDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
                 {endDateObj ? formatDisplayDate(endDateObj) : 'End Date'}
               </Text>
@@ -354,7 +355,7 @@ const Report = () => {
           onEndReachedThreshold={0.5}
         />
       </View>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 

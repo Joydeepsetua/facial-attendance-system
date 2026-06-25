@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, RefreshControl, Modal, Pressable } from 'react-native';
-import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl, Modal, Pressable, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
@@ -33,7 +33,7 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
   }
   return (
     <View style={Styles.emptyContainer}>
-      <Icon name="user" size="xl" color={colors.PRIMARY} strokeWidth={1.5}  />
+      <Icon name="user" size="xl" color={colors.BRAND} strokeWidth={1.5}  />
       <Text style={Styles.emptyText}>No users found</Text>
       <Text style={Styles.emptySubtext}>Create your first user to get started</Text>
     </View>
@@ -64,7 +64,7 @@ const UserItem = React.memo(({ item, onMenuPress }: UserItemProps) => (
       style={Styles.menuButton}
       onPress={(e) => onMenuPress(item, e)}
     >
-      <Icon name="more-vertical" size="sm" color={colors.TEXT_SECONDARY} />
+      <Icon name="more-vertical" size="sm" color={colors.SURFACE_TEXT_MUTED} />
     </TouchableOpacity>
   </View>
 ));
@@ -137,7 +137,8 @@ const Users = () => {
   ), [handleMenuPress]);
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
       <Header title="Users" showBack />
       <View style={Styles.content}>
         <TouchableOpacity
@@ -167,7 +168,7 @@ const Users = () => {
           <Pressable style={Styles.overlay} onPress={() => setActiveMenu(null)}>
             <View style={[Styles.popupMenu, { top: menuPosition.top, right: menuPosition.right }]}>
               <TouchableOpacity style={Styles.popupMenuItem} onPress={() => menuUser && handleEdit(menuUser.uuid)}>
-                <Icon name="edit" size="xs" color={colors.TEXT_PRIMARY} />
+                <Icon name="edit" size="xs" color={colors.SURFACE_TEXT} />
                 <Text style={Styles.popupMenuText}>Edit</Text>
               </TouchableOpacity>
               <View style={Styles.popupMenuDivider} />
@@ -214,7 +215,7 @@ const Users = () => {
           </Pressable>
         </Modal>
       </View>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
