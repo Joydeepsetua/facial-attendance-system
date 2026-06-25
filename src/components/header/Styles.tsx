@@ -3,53 +3,35 @@ import colors from '../../constants/colors';
 
 const Style = StyleSheet.create({
   headerContainer: {
-    backgroundColor: colors.BG_CARD,
-    justifyContent: 'space-between',
-    alignItems: 'center',
     flexDirection: 'row',
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    minHeight: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.PRIMARY,
+    backgroundColor: colors.SURFACE_BG,
   },
-  headLeft: {
-    flex: 1,
-    flexDirection: 'row',
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.SURFACE_CARD,
     alignItems: 'center',
-  },
-  iconButton: {
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingEnd: 10,
-  },
-  iconText: {
-    fontSize: 24,
-    color: colors.PRIMARY,
-  },
-  titleContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    marginLeft: 10,
+    shadowColor: '#1E2A4A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   title: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: colors.TEXT_PRIMARY,
+    color: colors.SURFACE_TEXT,
     textTransform: 'capitalize',
-    letterSpacing: 0.5,
+    marginLeft: 14,
   },
-  notificationBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    backgroundColor: colors.RED,
+  titleNoBack: {
+    marginLeft: 4,
   },
 });
 

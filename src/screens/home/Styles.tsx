@@ -135,6 +135,96 @@ const Styles = StyleSheet.create({
     color: dash.TEXT_MUTED,
     marginTop: 3,
   },
+
+  // ---- Modals (scan / result) ----
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  loadingCard: {
+    backgroundColor: dash.CARD,
+    borderRadius: 16,
+    paddingVertical: 26,
+    paddingHorizontal: 34,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: dash.TEXT,
+    marginTop: 14,
+  },
+  resultCard: {
+    width: '100%',
+    backgroundColor: dash.CARD,
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  resultIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: dash.TEXT_MUTED,
+    textAlign: 'center',
+  },
+  resultName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: dash.TEXT,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  resultSub: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: dash.TEXT_MUTED,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  resultActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    alignSelf: 'stretch',
+  },
+  resultButton: {
+    flex: 1,
+    backgroundColor: dash.BLUE,
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  resultButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: dash.ON_BLUE,
+  },
+  resultButtonOutline: {
+    flex: 1,
+    backgroundColor: dash.BG,
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: dash.BORDER,
+  },
+  resultButtonOutlineText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: dash.TEXT,
+  },
 });
 
 export default Styles;

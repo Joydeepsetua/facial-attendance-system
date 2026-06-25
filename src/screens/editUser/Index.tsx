@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, NativeModules, ActivityIndicator } from 'react-native';
-import SafeAreaWrapper from '../../wrappers/SafeAreaWrapper';
+import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, StatusBar, NativeModules, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import DuplicateFaceModal from '../../components/duplicateFaceModal/Index';
+import Icon from '../../components/icons/Index';
 import Styles from '../createUser/Styles';
 import colors from '../../constants/colors';
 import { openCamera } from '../../utils/camera';
@@ -110,26 +111,28 @@ const EditUser = () => {
 
   if (loading) {
     return (
-      <SafeAreaWrapper>
+      <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
         <Header title="Edit User" showBack />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.PRIMARY} />
+          <ActivityIndicator size="large" color={colors.BRAND} />
         </View>
-      </SafeAreaWrapper>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
       <Header title="Edit User" showBack />
       <ScrollView style={Styles.scrollView} contentContainerStyle={Styles.scrollContent}>
-        <View style={Styles.formContainer}>
+        <View style={Styles.card}>
           <View style={Styles.inputContainer}>
             <Text style={Styles.label}>Full Name</Text>
             <TextInput
               style={Styles.input}
               placeholder="Enter full name"
-              placeholderTextColor={colors.DARK_GRAY}
+              placeholderTextColor={colors.SURFACE_TEXT_MUTED}
               value={fullName}
               onChangeText={setFullName}
             />
@@ -137,19 +140,40 @@ const EditUser = () => {
 
           <View style={Styles.inputContainer}>
             <Text style={Styles.label}>Update Profile Image</Text>
-            <TouchableOpacity style={Styles.imagePicker} onPress={handleImagePicker}>
+            <TouchableOpacity
+              style={Styles.imagePicker}
+              activeOpacity={0.85}
+              onPress={handleImagePicker}
+            >
               {base64Image ? (
-                <Image source={{ uri: `data:image/jpeg;base64,${base64Image}` }} style={Styles.imagePreview} />
+                <View style={Styles.imagePreviewWrap}>
+                  <Image
+                    source={{ uri: `data:image/jpeg;base64,${base64Image}` }}
+                    style={Styles.imagePreview}
+                  />
+                  <View style={Styles.retakeOverlay}>
+                    <Icon name="retake" size="xs" color="#FFFFFF" strokeWidth={2.5} />
+                    <Text style={Styles.retakeOverlayText}>Retake</Text>
+                  </View>
+                </View>
               ) : (
                 <View style={Styles.imagePlaceholder}>
-                  <Text style={Styles.imagePlaceholderIcon}>📷</Text>
+                  <View style={Styles.placeholderIconCircle}>
+                    <Icon name="camera" size="lg" color={colors.BRAND} strokeWidth={2} />
+                  </View>
                   <Text style={Styles.imagePlaceholderText}>Tap to capture new image</Text>
+                  <Text style={Styles.imagePlaceholderHint}>Front camera · clear face</Text>
                 </View>
               )}
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={Styles.createButton} onPress={handleUpdateUser}>
+          <TouchableOpacity
+            style={Styles.createButton}
+            activeOpacity={0.85}
+            onPress={handleUpdateUser}
+          >
+            <Icon name="check" size="sm" color="#FFFFFF" strokeWidth={2.5} />
             <Text style={Styles.createButtonText}>Update User</Text>
           </TouchableOpacity>
         </View>
@@ -162,7 +186,7 @@ const EditUser = () => {
         onConfirm={handleConfirmDuplicate}
         confirmLabel="Update Anyway"
       />
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
