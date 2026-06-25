@@ -22,6 +22,12 @@ import {
   UserX,
   Clock,
   ChevronRight,
+  Bell,
+  Scan,
+  ScanFace,
+  CheckCircle2,
+  XCircle,
+  ChartNoAxesCombined,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -48,6 +54,12 @@ export const ICON_MAP = {
   "user-x": UserX,
   clock: Clock,
   "chevron-right": ChevronRight,
+  bell: Bell,
+  scan: Scan,
+  "scan-face": ScanFace,
+  "check-circle": CheckCircle2,
+  "x-circle": XCircle,
+  "chart-no-axes-combined": ChartNoAxesCombined,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;

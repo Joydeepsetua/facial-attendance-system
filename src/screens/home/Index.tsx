@@ -10,6 +10,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  RadialGradient,
+  Stop,
+  Rect,
+  Circle,
+} from 'react-native-svg';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppContainer';
@@ -24,6 +32,26 @@ import Icon from '../../components/icons/Index';
 import { AppIconName } from '../../components/icons/icons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Scan-ring cluster (rings + icon share one box so they always stay centered).
+const CLUSTER = 160;
+const CC = CLUSTER / 2;
+
+// Decorative particle dots scattered across the header (x/y in %, r in px).
+const PARTICLES = [
+  { x: '8%', y: '30%', r: 2, o: 0.5 },
+  { x: '16%', y: '62%', r: 1.5, o: 0.35 },
+  { x: '30%', y: '22%', r: 1.5, o: 0.4 },
+  { x: '40%', y: '70%', r: 2, o: 0.3 },
+  { x: '52%', y: '34%', r: 1.5, o: 0.45 },
+  { x: '60%', y: '74%', r: 2.5, o: 0.5 },
+  { x: '70%', y: '20%', r: 1.5, o: 0.4 },
+  { x: '88%', y: '64%', r: 2, o: 0.45 },
+  { x: '94%', y: '30%', r: 1.5, o: 0.35 },
+  { x: '78%', y: '78%', r: 1.5, o: 0.3 },
+  { x: '24%', y: '44%', r: 1, o: 0.3 },
+  { x: '46%', y: '54%', r: 1, o: 0.3 },
+];
 
 interface Action {
   key: string;
@@ -63,6 +91,7 @@ const Home = () => {
   const [stats, setStats] = useState({ users: 0, today: 0 });
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<AttendanceOutcome | null>(null);
+  const [bannerSize, setBannerSize] = useState({ width: 0, height: 0 });
   const absent = Math.max(stats.users - stats.today, 0);
 
   // Defer DB init off the entry transition (tables are pre-created on splash).
@@ -112,16 +141,16 @@ const Home = () => {
 
   const overview: Stat[] = [
     { key: 'users', value: stats.users, label: 'Total Users', icon: 'users', accent: colors.ACCENT_BLUE },
-    { key: 'present', value: stats.today, label: 'Present', icon: 'user-check', accent: colors.ACCENT_GREEN },
-    { key: 'absent', value: absent, label: 'Absent', icon: 'user-x', accent: colors.RED },
+    { key: 'present', value: stats.today, label: 'Present', icon: 'check-circle', accent: colors.ACCENT_GREEN },
+    { key: 'absent', value: absent, label: 'Absent', icon: 'x-circle', accent: colors.RED },
   ];
 
   const actions: Action[] = [
     {
       key: 'attendance',
       title: 'Mark Attendance',
-      subtitle: 'Face scan check-in',
-      icon: 'camera',
+      subtitle: 'Check-in & check-out',
+      icon: 'scan-face',
       accent: colors.ACCENT_BLUE,
       onPress: handleMarkAttendance,
     },
@@ -130,22 +159,22 @@ const Home = () => {
       title: 'Add User',
       subtitle: 'Register employee',
       icon: 'user-plus',
-      accent: colors.ACCENT_VIOLET,
+      accent: colors.ACCENT_BLUE,
       onPress: () => navigation.navigate('CreateUser'),
     },
     {
       key: 'users',
       title: 'Manage Users',
-      subtitle: 'View & edit',
+      subtitle: 'View & edit users',
       icon: 'users',
       accent: colors.ACCENT_GREEN,
       onPress: () => navigation.navigate('Users'),
     },
     {
       key: 'reports',
-      title: 'Reports',
-      subtitle: 'Attendance records',
-      icon: 'report',
+      title: 'Attendance',
+      subtitle: 'View records',
+      icon: 'chart-no-axes-combined',
       accent: colors.ACCENT_ORANGE,
       onPress: () => navigation.navigate('Report'),
     },
@@ -169,34 +198,95 @@ const Home = () => {
 
   return (
     <SafeAreaView style={Styles.screen} edges={['bottom']}>
-      <StatusBar backgroundColor={dash.BLUE} barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <ScrollView
         contentContainerStyle={Styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header banner — blue extends behind the status bar */}
-        <View style={[Styles.banner, { paddingTop: insets.top + 18 }]}>
-          <Text style={Styles.greeting}>Welcome to</Text>
-          <Text style={Styles.appName}>FaceTen</Text>
-          <Text style={Styles.dateText}>{longDate()}</Text>
+        {/* Header banner — gradient extends behind the status bar */}
+        <View
+          style={[Styles.banner, { paddingTop: insets.top + 16 }]}
+          onLayout={(e) => setBannerSize(e.nativeEvent.layout)}
+        >
+          <Svg style={Styles.bannerGradient} pointerEvents="none">
+            <Defs>
+              <SvgLinearGradient id="hdrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0" stopColor="#2E7BF0" />
+                <Stop offset="0.55" stopColor="#1E66E0" />
+                <Stop offset="1" stopColor="#1450B5" />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#hdrGrad)" />
+
+            {/* Particle dots */}
+            {PARTICLES.map((p, i) => (
+              <Circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#FFFFFF" fillOpacity={p.o} />
+            ))}
+          </Svg>
+          <View style={Styles.bannerTopRow}>
+            <View>
+              <Text style={Styles.greeting}>Welcome to</Text>
+              <Text style={Styles.appName}>FaceTen</Text>
+              <View style={Styles.dateRow}>
+                <Icon name="calendar" size="xs" color="rgba(255,255,255,0.6)" strokeWidth={2} />
+                <Text style={Styles.dateText}>{longDate()}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Scan cluster: rings + icon in one box so they're always aligned */}
+          <View
+            style={[Styles.scanCluster, { top: bannerSize.height * 0.42 - CC }]}
+            pointerEvents="box-none"
+          >
+            <Svg width={CLUSTER} height={CLUSTER} style={Styles.scanClusterSvg} pointerEvents="none">
+              <Defs>
+                <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0" stopColor="#BFE0FF" stopOpacity="0.45" />
+                  <Stop offset="1" stopColor="#BFE0FF" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Circle cx={CC} cy={CC} r={CC} fill="url(#glow)" />
+              <Circle cx={CC} cy={CC} r="30" stroke="#FFFFFF" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
+              <Circle cx={CC} cy={CC} r="50" stroke="#FFFFFF" strokeOpacity="0.18" strokeWidth="1.5" fill="none" />
+              <Circle cx={CC} cy={CC} r="70" stroke="#FFFFFF" strokeOpacity="0.10" strokeWidth="1.5" fill="none" />
+            </Svg>
+            <TouchableOpacity
+              style={Styles.scanBadge}
+              activeOpacity={0.85}
+              onPress={handleMarkAttendance}
+            >
+              <Icon name="scan-face" size="xxl" color={dash.ON_BLUE} strokeWidth={1.6} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Today's overview */}
-        <Text style={Styles.sectionTitle}>Today's Overview</Text>
+        {/* Today's overview — floating card */}
         <View style={Styles.overviewCard}>
-          {overview.map((stat, index) => (
-            <React.Fragment key={stat.key}>
-              {index > 0 && <View style={Styles.statDivider} />}
-              <View style={Styles.statCol}>
-                <Text style={[Styles.statValue, { color: stat.accent }]}>{stat.value}</Text>
-                <Text style={[Styles.statLabel, { color: stat.accent }]}>{stat.label}</Text>
+          <Text style={Styles.overviewTitle}>Today's Overview</Text>
+          <View style={Styles.statsRow}>
+            {overview.map((stat) => (
+              <View key={stat.key} style={Styles.statCol}>
+                <View
+                  style={[Styles.statIconCircle, { backgroundColor: `${stat.accent}18` }]}
+                >
+                  <Icon name={stat.icon} size="md" color={stat.accent} strokeWidth={2.5} />
+                </View>
+                <Text style={Styles.statValue}>{stat.value}</Text>
+                <Text style={Styles.statLabel}>{stat.label}</Text>
               </View>
-            </React.Fragment>
-          ))}
+            ))}
+          </View>
         </View>
 
         {/* Quick actions */}
-        <Text style={Styles.sectionTitle}>Quick Actions</Text>
+        <View style={Styles.sectionRow}>
+          <Text style={Styles.sectionTitle}>Quick Actions</Text>
+          <View style={Styles.viewAll}>
+            <Text style={Styles.viewAllText}>View All</Text>
+            <Icon name="chevron-right" size="xs" color={dash.BLUE} strokeWidth={2.5} />
+          </View>
+        </View>
         <View style={Styles.grid}>
           {actions.map((action) => (
             <TouchableOpacity
@@ -205,16 +295,19 @@ const Home = () => {
               activeOpacity={0.85}
               onPress={action.onPress}
             >
-              <View
-                style={[
-                  Styles.actionIconWrap,
-                  { backgroundColor: `${action.accent}18` },
-                ]}
-              >
-                <Icon name={action.icon} size="lg" color={action.accent} strokeWidth={2} />
+              <View style={Styles.actionMain}>
+                <View
+                  style={[
+                    Styles.actionIconWrap,
+                    { backgroundColor: `${action.accent}18` },
+                  ]}
+                >
+                  <Icon name={action.icon} size="lg" color={action.accent} strokeWidth={2} />
+                </View>
+                <Text style={Styles.actionTitle}>{action.title}</Text>
+                <Text style={Styles.actionSubtitle}>{action.subtitle}</Text>
               </View>
-              <Text style={Styles.actionTitle}>{action.title}</Text>
-              <Text style={Styles.actionSubtitle}>{action.subtitle}</Text>
+              <Icon name="chevron-right" size="sm" color={dash.TEXT_MUTED} strokeWidth={2} />
             </TouchableOpacity>
           ))}
         </View>

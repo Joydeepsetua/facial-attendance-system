@@ -41,65 +41,133 @@ const Styles = StyleSheet.create({
   banner: {
     backgroundColor: dash.BLUE,
     paddingHorizontal: H_PADDING,
-    paddingBottom: 22,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    paddingBottom: 120,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    overflow: 'hidden',
+  },
+  bannerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   greeting: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: dash.ON_BLUE_MUTED,
   },
   appName: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
     color: dash.ON_BLUE,
     letterSpacing: 0.3,
     marginTop: 2,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
   dateText: {
     fontSize: 13,
     fontWeight: '500',
-    color: dash.ON_BLUE_MUTED,
-    marginTop: 6,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  scanCluster: {
+    position: 'absolute',
+    right: -12,
+    width: 160,
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanClusterSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  scanBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  // ---- Section ----
-  sectionTitle: {
+  // ---- Today's overview (floating card) ----
+  overviewCard: {
+    backgroundColor: dash.CARD,
+    borderRadius: 18,
+    marginHorizontal: H_PADDING,
+    marginTop: -85,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    ...cardShadow,
+  },
+  overviewTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: dash.TEXT,
-    marginTop: 22,
-    marginBottom: 12,
-    paddingHorizontal: H_PADDING,
+    marginBottom: 16,
   },
-
-  // ---- Today's overview card ----
-  overviewCard: {
+  statsRow: {
     flexDirection: 'row',
-    backgroundColor: dash.CARD,
-    borderRadius: 14,
-    paddingVertical: 18,
-    marginHorizontal: H_PADDING,
-    ...cardShadow,
   },
   statCol: {
     flex: 1,
     alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: dash.BORDER,
-    marginVertical: 4,
+  statIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   statValue: {
     fontSize: 22,
     fontWeight: '800',
+    color: dash.TEXT,
   },
   statLabel: {
     fontSize: 12,
+    fontWeight: '500',
+    color: dash.TEXT_MUTED,
+    marginTop: 2,
+  },
+
+  // ---- Section header ----
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: H_PADDING,
+    marginTop: 22,
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: dash.TEXT,
+  },
+  viewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  viewAllText: {
+    fontSize: 13,
     fontWeight: '600',
-    marginTop: 3,
+    color: dash.BLUE,
   },
 
   // ---- Action grid ----
@@ -112,25 +180,31 @@ const Styles = StyleSheet.create({
   actionCard: {
     width: CARD_W,
     backgroundColor: dash.CARD,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     ...cardShadow,
   },
+  actionMain: {
+    flex: 1,
+  },
   actionIconWrap: {
-    width: 46,
-    height: 46,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   actionTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
     color: dash.TEXT,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '500',
     color: dash.TEXT_MUTED,
     marginTop: 3,
