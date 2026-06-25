@@ -16,6 +16,12 @@ import {
   EllipsisVertical,
   Pencil,
   Trash2,
+  Wallet,
+  Settings,
+  UserCheck,
+  UserX,
+  Clock,
+  ChevronRight,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -36,6 +42,12 @@ export const ICON_MAP = {
   "more-vertical": EllipsisVertical,
   edit: Pencil,
   trash: Trash2,
+  wallet: Wallet,
+  settings: Settings,
+  "user-check": UserCheck,
+  "user-x": UserX,
+  clock: Clock,
+  "chevron-right": ChevronRight,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;
