@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   XCircle,
   ChartNoAxesCombined,
+  CreditCard,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -60,6 +61,7 @@ export const ICON_MAP = {
   "check-circle": CheckCircle2,
   "x-circle": XCircle,
   "chart-no-axes-combined": ChartNoAxesCombined,
+  card: CreditCard,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;

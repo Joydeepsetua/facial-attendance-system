@@ -1,6 +1,6 @@
 import SQLite from 'react-native-sqlite-2';
-import { createTableQureyUsers, TN_USERS } from './model/user';
-import { createTableQueryAttendance, TN_ATTENDANCE } from './model/attendance';
+import { createTableQureyUsers, TN_USERS, USER_COLUMN_MIGRATIONS } from './model/user';
+import { createTableQueryAttendance } from './model/attendance';
 
 const db = SQLite.openDatabase('FacialAttendance.db', '1.0', '', 1);
 
@@ -8,81 +8,147 @@ export const getDBConnection = () => {
     return db;
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// Schema versioning (PRAGMA user_version)
+//
+// The DB stores its own schema version in the file. On launch we read it and
+// run only the migrations newer than it, then bump it. To add a schema change:
+//   1. bump DB_VERSION
+//   2. add a MIGRATIONS[<new version>] entry that performs the change
+// Migrations are written to be idempotent so re-running is always safe.
+// ────────────────────────────────────────────────────────────────────────────
+
+const DB_VERSION = 2;
+
+type Tx = any;
+
+// Adds any HR columns that are missing on the users table (idempotent).
+const addMissingUserColumns = (tx: Tx, done: () => void) => {
+    tx.executeSql(
+        `PRAGMA table_info(${TN_USERS})`,
+        [],
+        (_t: Tx, result: any) => {
+            const existing = new Set<string>();
+            for (let i = 0; i < result.rows.length; i++) {
+                existing.add(result.rows.item(i).name);
+            }
+            const missing = USER_COLUMN_MIGRATIONS.filter((m) => !existing.has(m.col));
+            if (missing.length === 0) {
+                done();
+                return;
+            }
+            console.log(`Adding user columns: ${missing.map((m) => m.col).join(', ')}`);
+            let completed = 0;
+            const finishOne = () => {
+                completed += 1;
+                if (completed === missing.length) done();
+            };
+            missing.forEach((m) => {
+                tx.executeSql(
+                    `ALTER TABLE ${TN_USERS} ADD COLUMN ${m.col} ${m.type}`,
+                    [],
+                    () => finishOne(),
+                    (_t2: Tx, error: any) => {
+                        console.log(`Error adding column ${m.col}:`, error);
+                        finishOne();
+                        return false;
+                    }
+                );
+            });
+        },
+        (_t: Tx, error: any) => {
+            console.log('Error reading users table info:', error);
+            done();
+            return false;
+        }
+    );
+};
+
+// Each entry upgrades the schema TO that version number.
+const MIGRATIONS: { [version: number]: (tx: Tx, done: () => void) => void } = {
+    // v1 — base tables
+    1: (tx, done) => {
+        tx.executeSql(createTableQureyUsers, [], () => {
+            tx.executeSql(
+                createTableQueryAttendance,
+                [],
+                () => done(),
+                (_t: Tx, error: any) => {
+                    console.log('Error creating attendance table:', error);
+                    done();
+                    return false;
+                }
+            );
+        }, (_t: Tx, error: any) => {
+            console.log('Error creating users table:', error);
+            done();
+            return false;
+        });
+    },
+    // v2 — HR fields on users (employee_id, phone, salary, bank, statutory, …)
+    2: (tx, done) => addMissingUserColumns(tx, done),
+};
+
+// Run migrations from the current version up to DB_VERSION, in order.
+const runMigrations = (tx: Tx, fromVersion: number, allDone: () => void) => {
+    let version = fromVersion;
+    const next = () => {
+        version += 1;
+        if (version > DB_VERSION) {
+            allDone();
+            return;
+        }
+        const migration = MIGRATIONS[version];
+        if (!migration) {
+            next();
+            return;
+        }
+        console.log(`Running DB migration → v${version}`);
+        migration(tx, next);
+    };
+    next();
+};
+
 export const createTable = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-        db.transaction((tx) => {
-            // Enable foreign keys
-            tx.executeSql('PRAGMA foreign_keys = ON', [], () => { return true; }, () => { return false; });
-            
-            // Check and create users table first
+        db.transaction((tx: Tx) => {
+            tx.executeSql('PRAGMA foreign_keys = ON', [], () => true, () => false);
             tx.executeSql(
-                `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-                [TN_USERS],
-                (_tx, result) => {
-                    if (result.rows.length === 0) {
-                        console.log(`Creating table: ${TN_USERS}`);
+                'PRAGMA user_version',
+                [],
+                (_t: Tx, result: any) => {
+                    const currentVersion = result.rows.item(0)?.user_version ?? 0;
+                    if (currentVersion >= DB_VERSION) {
+                        console.log(`DB up to date (v${currentVersion})`);
+                        resolve();
+                        return;
+                    }
+                    console.log(`Migrating DB from v${currentVersion} to v${DB_VERSION}`);
+                    runMigrations(tx, currentVersion, () => {
                         tx.executeSql(
-                            createTableQureyUsers,
+                            `PRAGMA user_version = ${DB_VERSION}`,
                             [],
                             () => {
-                                console.log(`Table ${TN_USERS} created successfully`);
-                                // After users table is created, check and create attendance table
-                                checkAndCreateAttendanceTable(tx, resolve, reject);
+                                console.log(`DB migrated to v${DB_VERSION}`);
+                                resolve();
                             },
-                            (_t, error) => {
-                                console.log("Error creating users table:", error);
+                            (_t2: Tx, error: any) => {
+                                console.log('Error setting user_version:', error);
                                 reject(error);
                                 return false;
                             }
                         );
-                    } else {
-                        console.log(`Table ${TN_USERS} already exists, skipping creation`);
-                        // Users table exists, check and create attendance table
-                        checkAndCreateAttendanceTable(tx, resolve, reject);
-                    }
+                    });
                 },
-                (_t, error) => {
-                    console.log("Error checking users table existence:", error);
+                (_t: Tx, error: any) => {
+                    console.log('Error reading user_version:', error);
                     reject(error);
                     return false;
                 }
             );
-        }, (error) => {
-            console.log("Transaction error:", error);
+        }, (error: any) => {
+            console.log('Transaction error:', error);
             reject(error);
         });
     });
-};
-
-const checkAndCreateAttendanceTable = (tx: any, resolve: () => void, reject: (error: any) => void) => {
-    tx.executeSql(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-        [TN_ATTENDANCE],
-        (_tx: any, result: any) => {
-            if (result.rows.length === 0) {
-                console.log(`Creating table: ${TN_ATTENDANCE}`);
-                tx.executeSql(
-                    createTableQueryAttendance,
-                    [],
-                    () => {
-                        console.log(`Table ${TN_ATTENDANCE} created successfully`);
-                        resolve();
-                    },
-                    (_t: any, error: any) => {
-                        console.log(`Error creating attendance table:`, error);
-                        reject(error);
-                        return false;
-                    }
-                );
-            } else {
-                console.log(`Table ${TN_ATTENDANCE} already exists, skipping creation`);
-                resolve();
-            }
-        },
-        (_t: any, error: any) => {
-            console.log(`Error checking attendance table existence:`, error);
-            reject(error);
-            return false;
-        }
-    );
 };

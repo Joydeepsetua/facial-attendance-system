@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, StatusBar, NativeModules } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TextInputProps,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StatusBar,
+  NativeModules,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,47 +19,120 @@ import Icon from '../../components/icons/Index';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import { openCamera } from '../../utils/camera';
-import { createUser } from '../../sqlite/service/user';
+import { createUser, getNextEmployeeId, UserInput, SalaryType } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
 import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { RootStackParamList } from '../../navigation/AppContainer';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Reusable labelled text input (module-level so it keeps focus across renders).
+const LabeledInput = ({
+  label,
+  error,
+  ...props
+}: { label: string; error?: string } & TextInputProps) => (
+  <View style={Styles.inputContainer}>
+    <Text style={Styles.label}>{label}</Text>
+    <TextInput
+      style={[
+        Styles.input,
+        props.multiline ? Styles.inputMultiline : null,
+        error ? Styles.inputError : null,
+      ]}
+      placeholderTextColor={colors.SURFACE_TEXT_MUTED}
+      {...props}
+    />
+    {error ? <Text style={Styles.errorText}>{error}</Text> : null}
+  </View>
+);
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
+
+interface FormErrors {
+  name?: string;
+  phone?: string;
+  gender?: string;
+  photo?: string;
+}
+
 const CreateUser = () => {
   const navigation = useNavigation<NavigationProp>();
+
+  const [employeeId, setEmployeeId] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [salaryType, setSalaryType] = useState<SalaryType>('');
+  const [salaryAmount, setSalaryAmount] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [ifsc, setIfsc] = useState('');
+  const [pan, setPan] = useState('');
+  const [pf, setPf] = useState('');
+  const [esi, setEsi] = useState('');
+  const [uan, setUan] = useState('');
+
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    getNextEmployeeId().then(setEmployeeId);
+  }, []);
+
+  const clearError = (key: keyof FormErrors) =>
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+
+  const validate = (): boolean => {
+    const e: FormErrors = {};
+    if (!fullName.trim()) e.name = 'Full name is required';
+    if (!phone.trim()) e.phone = 'Phone number is required';
+    else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) e.phone = 'Enter a valid phone number';
+    if (!gender) e.gender = 'Please select gender';
+    if (!base64Image) e.photo = 'Profile photo is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const buildInput = (): UserInput => ({
+    name: fullName,
+    phone,
+    gender,
+    email,
+    address,
+    salaryType,
+    salaryAmount: salaryType && salaryAmount ? Number(salaryAmount) : null,
+    bankAccount,
+    ifsc,
+    pan,
+    pf,
+    esi,
+    uan,
+  });
 
   const handleImagePicker = async () => {
-    const base64Image = await openCamera();
-    if (!base64Image) return;
-    setBase64Image(base64Image);
+    const image = await openCamera();
+    if (!image) return;
+    setBase64Image(image);
+    clearError('photo');
   };
 
   const saveUser = async (embeddingArray: number[]) => {
-    const success = await createUser(fullName, embeddingArray);
+    const success = await createUser(buildInput(), embeddingArray);
     if (success) {
       showToast('User created successfully!', 'success');
-      setTimeout(() => {
-        navigation.goBack();
-      }, 500);
+      setTimeout(() => navigation.goBack(), 500);
     } else {
       showToast('Failed to create user', 'error');
     }
   };
 
   const handleCreateUser = async () => {
-    if (!fullName.trim()) {
-      Alert.alert('Validation', 'Please enter full name');
-      return;
-    }
-    if (!base64Image) {
-      Alert.alert('Validation', 'Please select an image');
-      return;
-    }
+    if (!validate()) return;
+
     try {
       const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
       const embeddingArray = embedding.split(',').map(Number);
@@ -92,57 +175,183 @@ const CreateUser = () => {
       <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
       <Header title="Add User" showBack />
       <ScrollView style={Styles.scrollView} contentContainerStyle={Styles.scrollContent}>
-        <View style={Styles.card}>
-          <View style={Styles.inputContainer}>
-            <Text style={Styles.label}>Full Name</Text>
-            <TextInput
-              style={Styles.input}
-              placeholder="Enter full name"
-              placeholderTextColor={colors.SURFACE_TEXT_MUTED}
-              value={fullName}
-              onChangeText={setFullName}
-            />
-          </View>
-
-          <View style={Styles.inputContainer}>
-            <Text style={Styles.label}>Profile Image</Text>
-            <TouchableOpacity
-              style={Styles.imagePicker}
-              activeOpacity={0.85}
-              onPress={handleImagePicker}
-            >
-              {base64Image ? (
-                <View style={Styles.imagePreviewWrap}>
-                  <Image
-                    source={{ uri: `data:image/jpeg;base64,${base64Image}` }}
-                    style={Styles.imagePreview}
-                  />
-                  <View style={Styles.retakeOverlay}>
-                    <Icon name="retake" size="xs" color="#FFFFFF" strokeWidth={2.5} />
-                    <Text style={Styles.retakeOverlayText}>Retake</Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={Styles.imagePlaceholder}>
-                  <View style={Styles.placeholderIconCircle}>
-                    <Icon name="camera" size="lg" color={colors.BRAND} strokeWidth={2} />
-                  </View>
-                  <Text style={Styles.imagePlaceholderText}>Tap to capture photo</Text>
-                  <Text style={Styles.imagePlaceholderHint}>Front camera · clear face</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={Styles.createButton}
-            activeOpacity={0.85}
-            onPress={handleCreateUser}
-          >
-            <Icon name="user-plus" size="sm" color="#FFFFFF" strokeWidth={2.2} />
-            <Text style={Styles.createButtonText}>Create User</Text>
+        {/* Profile header */}
+        <View style={Styles.profileHeader}>
+          <TouchableOpacity style={Styles.avatarWrap} activeOpacity={0.85} onPress={handleImagePicker}>
+            {base64Image ? (
+              <Image source={{ uri: `data:image/jpeg;base64,${base64Image}` }} style={Styles.avatarImage} />
+            ) : (
+              <View style={Styles.avatarPlaceholder}>
+                <Icon name="camera" size="xl" color={colors.BRAND} strokeWidth={1.8} />
+              </View>
+            )}
+            <View style={Styles.avatarBadge}>
+              <Icon name="camera" size="xs" color="#FFFFFF" strokeWidth={2.2} />
+            </View>
           </TouchableOpacity>
+          <View style={Styles.idPill}>
+            <Icon name="user" size="xs" color={colors.BRAND} strokeWidth={2.2} />
+            <Text style={Styles.idPillText}>ID {employeeId || '—'}</Text>
+          </View>
+          {errors.photo ? (
+            <Text style={[Styles.errorText, { textAlign: 'center' }]}>{errors.photo}</Text>
+          ) : null}
         </View>
+
+        {/* Personal */}
+        <View style={Styles.card}>
+          <View style={Styles.sectionHeader}>
+            <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_BLUE}18` }]}>
+              <Icon name="user" size="sm" color={colors.ACCENT_BLUE} strokeWidth={2} />
+            </View>
+            <Text style={Styles.sectionTitle}>Personal</Text>
+          </View>
+
+          <LabeledInput
+            label="Full Name *"
+            placeholder="Enter full name"
+            value={fullName}
+            onChangeText={(t) => {
+              setFullName(t);
+              clearError('name');
+            }}
+            error={errors.name}
+          />
+          <LabeledInput
+            label="Phone *"
+            placeholder="Enter phone number"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={(t) => {
+              setPhone(t);
+              clearError('phone');
+            }}
+            error={errors.phone}
+          />
+
+          <View style={Styles.inputContainer}>
+            <Text style={Styles.label}>Gender *</Text>
+            <View style={Styles.segmentRow}>
+              {GENDER_OPTIONS.map((g) => {
+                const active = gender === g;
+                return (
+                  <TouchableOpacity
+                    key={g}
+                    style={[Styles.segmentChip, active && Styles.segmentChipActive]}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setGender(g);
+                      clearError('gender');
+                    }}
+                  >
+                    <Text style={[Styles.segmentChipText, active && Styles.segmentChipTextActive]}>{g}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {errors.gender ? <Text style={Styles.errorText}>{errors.gender}</Text> : null}
+          </View>
+
+          <LabeledInput
+            label="Email"
+            placeholder="Enter email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <LabeledInput
+            label="Address"
+            placeholder="Enter address"
+            multiline
+            value={address}
+            onChangeText={setAddress}
+          />
+        </View>
+
+        {/* Salary */}
+        <View style={Styles.card}>
+          <View style={Styles.sectionHeader}>
+            <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_AMBER}18` }]}>
+              <Icon name="wallet" size="sm" color={colors.ACCENT_AMBER} strokeWidth={2} />
+            </View>
+            <Text style={Styles.sectionTitle}>Salary</Text>
+          </View>
+
+          <View style={Styles.inputContainer}>
+            <Text style={Styles.label}>Salary Type</Text>
+            <View style={Styles.segmentRow}>
+              {(['fixed', 'daily'] as SalaryType[]).map((t) => {
+                const active = salaryType === t;
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    style={[Styles.segmentChip, active && Styles.segmentChipActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setSalaryType(active ? '' : t)}
+                  >
+                    <Text style={[Styles.segmentChipText, active && Styles.segmentChipTextActive]}>
+                      {t === 'fixed' ? 'Fixed' : 'Daily'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {salaryType !== '' && (
+            <LabeledInput
+              label={salaryType === 'fixed' ? 'Monthly Amount' : 'Daily Amount'}
+              placeholder="Enter amount"
+              keyboardType="numeric"
+              value={salaryAmount}
+              onChangeText={setSalaryAmount}
+            />
+          )}
+          {salaryType === 'daily' && (
+            <Text style={Styles.helperText}>Payroll = daily amount × days present (from attendance)</Text>
+          )}
+        </View>
+
+        {/* Bank & Statutory */}
+        <View style={Styles.card}>
+          <View style={Styles.sectionHeader}>
+            <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}>
+              <Icon name="card" size="sm" color={colors.ACCENT_GREEN} strokeWidth={2} />
+            </View>
+            <Text style={Styles.sectionTitle}>Bank & Statutory</Text>
+          </View>
+
+          <LabeledInput
+            label="Bank Account Number"
+            placeholder="Enter account number"
+            keyboardType="numeric"
+            value={bankAccount}
+            onChangeText={setBankAccount}
+          />
+          <LabeledInput
+            label="IFSC Code"
+            placeholder="Enter IFSC"
+            autoCapitalize="characters"
+            value={ifsc}
+            onChangeText={setIfsc}
+          />
+          <LabeledInput
+            label="PAN"
+            placeholder="Enter PAN"
+            autoCapitalize="characters"
+            value={pan}
+            onChangeText={setPan}
+          />
+          <LabeledInput label="PF Number" placeholder="Enter PF number" value={pf} onChangeText={setPf} />
+          <LabeledInput label="ESI Number" placeholder="Enter ESI number" value={esi} onChangeText={setEsi} />
+          <LabeledInput label="UAN" placeholder="Enter UAN" value={uan} onChangeText={setUan} />
+        </View>
+
+        <TouchableOpacity style={Styles.createButton} activeOpacity={0.85} onPress={handleCreateUser}>
+          <Icon name="user-plus" size="sm" color="#FFFFFF" strokeWidth={2.2} />
+          <Text style={Styles.createButtonText}>Create User</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <DuplicateFaceModal

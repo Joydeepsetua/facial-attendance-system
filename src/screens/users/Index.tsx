@@ -57,7 +57,9 @@ const UserItem = React.memo(({ item, onMenuPress }: UserItemProps) => (
     <View style={Styles.userInfo}>
       <Text style={Styles.userName}>{item.name}</Text>
       <Text style={Styles.userDate}>
-        Created: {formatDate(item.created_at)}
+        {[item.employee_id ? `ID ${item.employee_id}` : null, item.phone || null]
+          .filter(Boolean)
+          .join('  ·  ')}
       </Text>
     </View>
     <TouchableOpacity
