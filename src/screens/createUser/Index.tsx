@@ -22,6 +22,7 @@ import { openCamera } from '../../utils/camera';
 import { createUser, getNextEmployeeId, UserInput, SalaryType } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
 import { findDuplicateUsers, FaceMatch } from '../../utils/face';
+import { validateEmail, validateIfsc, validatePan, validateUan } from '../../utils/validation';
 import { RootStackParamList } from '../../navigation/AppContainer';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -54,6 +55,10 @@ interface FormErrors {
   phone?: string;
   gender?: string;
   photo?: string;
+  email?: string;
+  ifsc?: string;
+  pan?: string;
+  uan?: string;
 }
 
 const CreateUser = () => {
@@ -93,6 +98,11 @@ const CreateUser = () => {
     else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) e.phone = 'Enter a valid phone number';
     if (!gender) e.gender = 'Please select gender';
     if (!base64Image) e.photo = 'Profile photo is required';
+    e.email = validateEmail(email);
+    e.ifsc = validateIfsc(ifsc);
+    e.pan = validatePan(pan);
+    e.uan = validateUan(uan);
+    Object.keys(e).forEach((k) => e[k as keyof FormErrors] === undefined && delete e[k as keyof FormErrors]);
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -258,7 +268,11 @@ const CreateUser = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => {
+              setEmail(t);
+              clearError('email');
+            }}
+            error={errors.email}
           />
           <LabeledInput
             label="Address"
@@ -334,18 +348,36 @@ const CreateUser = () => {
             placeholder="Enter IFSC"
             autoCapitalize="characters"
             value={ifsc}
-            onChangeText={setIfsc}
+            onChangeText={(t) => {
+              setIfsc(t);
+              clearError('ifsc');
+            }}
+            error={errors.ifsc}
           />
           <LabeledInput
             label="PAN"
             placeholder="Enter PAN"
             autoCapitalize="characters"
             value={pan}
-            onChangeText={setPan}
+            onChangeText={(t) => {
+              setPan(t);
+              clearError('pan');
+            }}
+            error={errors.pan}
           />
           <LabeledInput label="PF Number" placeholder="Enter PF number" value={pf} onChangeText={setPf} />
           <LabeledInput label="ESI Number" placeholder="Enter ESI number" value={esi} onChangeText={setEsi} />
-          <LabeledInput label="UAN" placeholder="Enter UAN" value={uan} onChangeText={setUan} />
+          <LabeledInput
+            label="UAN"
+            placeholder="Enter UAN"
+            keyboardType="numeric"
+            value={uan}
+            onChangeText={(t) => {
+              setUan(t);
+              clearError('uan');
+            }}
+            error={errors.uan}
+          />
         </View>
 
         <TouchableOpacity style={Styles.createButton} activeOpacity={0.85} onPress={handleCreateUser}>
