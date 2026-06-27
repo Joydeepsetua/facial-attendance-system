@@ -36,6 +36,7 @@ import {
   LogOut,
   Building2,
   SlidersHorizontal,
+  Phone,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -76,6 +77,7 @@ export const ICON_MAP = {
   logout: LogOut,
   building: Building2,
   sliders: SlidersHorizontal,
+  phone: Phone,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;

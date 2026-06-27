@@ -1,104 +1,159 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { View, Text, SectionList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Platform, StatusBar, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Header from '../../components/header/Index';
-import { getAllAttendance, Attendance } from '../../sqlite/service/attendance';
+import { getAttendanceRoster, RosterEntry, RosterStatus } from '../../sqlite/service/attendance';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import Icon from '../../components/icons/Index';
 
+type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
+
+const STATUS_OPTIONS: { key: RosterStatus; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'present', label: 'Present' },
+  { key: 'absent', label: 'Absent' },
+];
+
+const DATE_OPTIONS: { key: DatePreset; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'custom', label: 'Custom' },
+];
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
 const formatTime = (dateString?: string) => {
   if (!dateString) return '--:--';
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-};
-
-const formatDate = (dateString?: string) => {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const month = monthNames[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
 const calculateHours = (punchIn?: string, punchOut?: string) => {
   if (!punchIn || !punchOut) return null;
-  const inTime = new Date(punchIn).getTime();
-  const outTime = new Date(punchOut).getTime();
-  const diffHours = (outTime - inTime) / (1000 * 60 * 60);
-  
+  const diffHours = (new Date(punchOut).getTime() - new Date(punchIn).getTime()) / (1000 * 60 * 60);
   const hours = Math.floor(diffHours);
   const minutes = Math.floor((diffHours - hours) * 60);
-  
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-interface AttendanceSection {
-  title: string;
-  data: Attendance[];
-}
-
-const groupAttendanceByDate = (data: Attendance[]): AttendanceSection[] => {
-  if (!data || data.length === 0) return [];
-
-  const grouped: { [key: string]: Attendance[] } = {};
-  
-  data.forEach((item) => {
-    const dateToUse = item.punch_in || item.created_at;
-    const dateStr = formatDate(dateToUse);
-    
-    if (!grouped[dateStr]) {
-      grouped[dateStr] = [];
-    }
-    grouped[dateStr].push(item);
-  });
-  
-  return Object.keys(grouped).map(date => ({
-    title: date,
-    data: grouped[date]
-  }));
+const toDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const renderAttendanceItem = ({ item }: { item: Attendance }) => {
+// Display a 'YYYY-MM-DD' day string as 'DD MON YYYY' (no timezone shift).
+const formatDayHeader = (dayStr: string): string => {
+  const [y, m, d] = dayStr.split('-');
+  return `${d} ${MONTHS[Number(m) - 1]} ${y}`;
+};
+
+const formatPickerDate = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = MONTHS[date.getMonth()];
+  return `${day} ${month.charAt(0)}${month.slice(1).toLowerCase()} ${date.getFullYear()}`;
+};
+
+const addDays = (date: Date, n: number): Date => {
+  const x = new Date(date);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+// Monday-based start of the week.
+const startOfWeek = (date: Date): Date => {
+  const x = new Date(date);
+  const offset = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - offset);
+  return x;
+};
+
+// Resolve an applied filter into [startDate, endDate] day strings.
+const resolveRange = (
+  preset: DatePreset,
+  customStart: Date | null,
+  customEnd: Date | null,
+): { start: string; end: string } => {
+  const today = new Date();
+  switch (preset) {
+    case 'yesterday': {
+      const y = addDays(today, -1);
+      return { start: toDateString(y), end: toDateString(y) };
+    }
+    case 'week':
+      return { start: toDateString(startOfWeek(today)), end: toDateString(today) };
+    case 'month':
+      return { start: toDateString(new Date(today.getFullYear(), today.getMonth(), 1)), end: toDateString(today) };
+    case 'custom':
+      if (customStart && customEnd) {
+        return { start: toDateString(customStart), end: toDateString(customEnd) };
+      }
+      return { start: toDateString(today), end: toDateString(today) };
+    case 'today':
+    default:
+      return { start: toDateString(today), end: toDateString(today) };
+  }
+};
+
+interface RosterSection {
+  title: string;
+  data: RosterEntry[];
+}
+
+const groupByDay = (data: RosterEntry[]): RosterSection[] => {
+  const grouped: { [day: string]: RosterEntry[] } = {};
+  data.forEach((item) => {
+    if (!grouped[item.day]) grouped[item.day] = [];
+    grouped[item.day].push(item);
+  });
+  return Object.keys(grouped).map((day) => ({ title: formatDayHeader(day), data: grouped[day] }));
+};
+
+const renderRosterItem = ({ item }: { item: RosterEntry }) => {
+  const present = item.status === 'present';
   const hours = calculateHours(item.punch_in, item.punch_out);
 
   return (
     <View style={Styles.attendanceCard}>
       <View style={Styles.attendanceAvatar}>
-        {/* We can use an outlined circle or icon to match the UI later, 
-            for now keeping the initial avatar but changing styles in Styles.tsx */}
-        <Text style={Styles.attendanceAvatarText}>
-          {item.user_name?.charAt(0).toUpperCase() || '?'}
-        </Text>
+        <Text style={Styles.attendanceAvatarText}>{item.user_name?.charAt(0).toUpperCase() || '?'}</Text>
       </View>
       <View style={Styles.attendanceInfo}>
-        <Text style={Styles.attendanceUserName}>{item.user_name || 'Unknown User'}</Text>
-        
+        <View style={Styles.nameRow}>
+          <Text style={Styles.attendanceUserName} numberOfLines={1}>{item.user_name || 'Unknown User'}</Text>
+          <View style={[Styles.statusBadge, present ? Styles.statusBadgePresent : Styles.statusBadgeAbsent]}>
+            <View style={[Styles.statusDot, present ? Styles.statusDotPresent : Styles.statusDotAbsent]} />
+            <Text style={[Styles.statusText, present ? Styles.statusTextPresent : Styles.statusTextAbsent]}>
+              {present ? 'Present' : 'Absent'}
+            </Text>
+          </View>
+        </View>
+
+        {(item.user_employee_id || item.user_phone) ? (
+          <Text style={Styles.attendanceUserMeta}>
+            {[item.user_employee_id ? `ID ${item.user_employee_id}` : null, item.user_phone || null]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </Text>
+        ) : null}
+
         <View style={Styles.statsRow}>
           <View style={Styles.statColumn}>
             <Text style={Styles.statLabel}>In Time</Text>
             <Text style={Styles.statValue}>{formatTime(item.punch_in)}</Text>
           </View>
-          
-          <View style={Styles.arrowContainer}>
-            <Text style={Styles.arrowText}>→</Text>
-          </View>
-          
+          <View style={Styles.arrowContainer}><Text style={Styles.arrowText}>→</Text></View>
           <View style={Styles.statColumn}>
             <Text style={Styles.statLabel}>Out Time</Text>
             <Text style={Styles.statValue}>{item.punch_out ? formatTime(item.punch_out) : '--:--'}</Text>
           </View>
-          
           <View style={Styles.dividerVertical} />
-          
           <View style={Styles.statColumn}>
             <Text style={Styles.statLabel}>Total</Text>
             <Text style={Styles.statValue}>{hours || '--:--'}</Text>
@@ -120,70 +175,65 @@ const renderEmptyComponent = ({ loading }: { loading: boolean }) => {
   }
   return (
     <View style={Styles.emptyContainer}>
-      <Text style={Styles.emptyIcon}>📊</Text>
-      <Text style={Styles.emptyText}>No attendance records found</Text>
-      <Text style={Styles.emptySubtext}>
-        Attendance records will appear here after marking attendance
-      </Text>
+      <Text style={Styles.emptyIcon}>👥</Text>
+      <Text style={Styles.emptyText}>No records found</Text>
+      <Text style={Styles.emptySubtext}>No records for the selected date range</Text>
     </View>
   );
 };
 
-const keyExtractor = (item: Attendance) => item.id;
+const keyExtractor = (item: RosterEntry) => `${item.day}_${item.user_id}`;
 
 const Report = () => {
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filters
+  // Search
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [startDateObj, setStartDateObj] = useState<Date | null>(null);
-  const [endDateObj, setEndDateObj] = useState<Date | null>(null);
+
+  // Applied filters
+  const [statusFilter, setStatusFilter] = useState<RosterStatus>('all');
+  const [datePreset, setDatePreset] = useState<DatePreset>('today');
+  const [customStart, setCustomStart] = useState<Date | null>(null);
+  const [customEnd, setCustomEnd] = useState<Date | null>(null);
+
+  // Filter sheet (draft state — only committed on Apply)
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<RosterStatus>('all');
+  const [draftPreset, setDraftPreset] = useState<DatePreset>('today');
+  const [draftStart, setDraftStart] = useState<Date | null>(null);
+  const [draftEnd, setDraftEnd] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const limit = 20;
 
-  // Debounce search input
+  const { start: startDate, end: endDate } = resolveRange(datePreset, customStart, customEnd);
+
   useEffect(() => {
-    debounceTimer.current = setTimeout(() => {
-      setDebouncedSearch(searchText);
-    }, 500);
+    debounceTimer.current = setTimeout(() => setDebouncedSearch(searchText), 500);
     return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [searchText]);
 
-  const fetchAttendance = async (isLoadMore = false) => {
-    if (!isLoadMore) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
+  const fetchRoster = async (isLoadMore = false) => {
+    if (!isLoadMore) setLoading(true);
+    else setLoadingMore(true);
 
     try {
       const page = isLoadMore ? currentPage + 1 : 1;
-      const response = await getAllAttendance(debouncedSearch, startDate, endDate, limit, page);
-      const { data: newLogs, pagination } = response;
-
+      const response = await getAttendanceRoster(startDate, endDate, statusFilter, debouncedSearch, limit, page);
+      const { data, pagination } = response;
       setCurrentPage(pagination.currentPage);
       setHasMore(pagination.currentPage < pagination.totalPages);
-
-      if (isLoadMore) {
-        setAttendance(prev => [...prev, ...newLogs]);
-      } else {
-        setAttendance(newLogs);
-      }
+      setRoster((prev) => (isLoadMore ? [...prev, ...data] : data));
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {
@@ -195,60 +245,58 @@ const Report = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchAttendance(false);
-    }, [debouncedSearch, startDate, endDate])
+      fetchRoster(false);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSearch, statusFilter, startDate, endDate])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchAttendance(false);
+    fetchRoster(false);
   };
 
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      fetchAttendance(true);
+    if (!loadingMore && hasMore) fetchRoster(true);
+  };
+
+  const openSheet = () => {
+    setDraftStatus(statusFilter);
+    setDraftPreset(datePreset);
+    setDraftStart(customStart);
+    setDraftEnd(customEnd);
+    setSheetVisible(true);
+  };
+
+  const applyFilters = () => {
+    setStatusFilter(draftStatus);
+    setDatePreset(draftPreset);
+    if (draftPreset === 'custom') {
+      setCustomStart(draftStart);
+      setCustomEnd(draftEnd);
     }
+    setSheetVisible(false);
   };
 
-  const toDateString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const resetFilters = () => {
+    setDraftStatus('all');
+    setDraftPreset('today');
+    setDraftStart(null);
+    setDraftEnd(null);
   };
 
-  const formatDisplayDate = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  const onStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+  const onStartChange = (_e: DateTimePickerEvent, date?: Date) => {
     setShowStartPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDateObj(selectedDate);
-      setStartDate(toDateString(selectedDate));
-    }
+    if (date) setDraftStart(date);
   };
-
-  const onEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+  const onEndChange = (_e: DateTimePickerEvent, date?: Date) => {
     setShowEndPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setEndDateObj(selectedDate);
-      setEndDate(toDateString(selectedDate));
-    }
+    if (date) setDraftEnd(date);
   };
 
-  const clearDateFilters = () => {
-    setStartDateObj(null);
-    setEndDateObj(null);
-    setStartDate('');
-    setEndDate('');
-  };
+  const filtersActive = statusFilter !== 'all' || datePreset !== 'today';
+  const customReady = draftPreset !== 'custom' || (draftStart !== null && draftEnd !== null);
 
-  const groupedAttendance = groupAttendanceByDate(attendance);
+  const groupedRoster = groupByDay(roster);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -265,76 +313,35 @@ const Report = () => {
       <Header title="Attendance Report" showBack />
       <View style={Styles.content}>
         <View style={Styles.filterContainer}>
-          <View style={Styles.searchContainer}>
-            <TextInput
-              style={Styles.searchInputField}
-              placeholder="Search by name..."
-              placeholderTextColor={colors.SURFACE_TEXT_MUTED}
-              value={searchText}
-              onChangeText={setSearchText}
-            />
-            {searchText.length > 0 && (
-              <TouchableOpacity style={Styles.searchClearButton} onPress={() => setSearchText('')}>
-                <Icon name="close" size="sm" color={colors.SURFACE_TEXT_MUTED} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={Styles.dateFilterRow}>
-            <TouchableOpacity
-              style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
-              onPress={() => setShowStartPicker(true)}>
-              <Icon name="calendar" size="sm" color={startDateObj ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
-              <Text style={startDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
-                {startDateObj ? formatDisplayDate(startDateObj) : 'Start Date'}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={Styles.dateArrowContainer}>
-              <Icon name="arrow-left-right" size="sm" color={colors.SURFACE_TEXT_MUTED} />
+          <View style={Styles.searchRow}>
+            <View style={[Styles.searchContainer, { flex: 1 }]}>
+              <TextInput
+                style={Styles.searchInputField}
+                placeholder="Search by name..."
+                placeholderTextColor={colors.SURFACE_TEXT_MUTED}
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+              {searchText.length > 0 && (
+                <TouchableOpacity style={Styles.searchClearButton} onPress={() => setSearchText('')}>
+                  <Icon name="close" size="sm" color={colors.SURFACE_TEXT_MUTED} />
+                </TouchableOpacity>
+              )}
             </View>
-
             <TouchableOpacity
-              style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
-              onPress={() => setShowEndPicker(true)}>
-              <Icon name="calendar" size="sm" color={endDateObj ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
-              <Text style={endDateObj ? Styles.datePickerText : Styles.datePickerPlaceholder}>
-                {endDateObj ? formatDisplayDate(endDateObj) : 'End Date'}
-              </Text>
+              style={[Styles.filterButton, filtersActive && Styles.filterButtonActive]}
+              onPress={openSheet}
+              activeOpacity={0.85}
+            >
+              <Icon name="sliders" size="sm" color={filtersActive ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
+              {filtersActive && <View style={Styles.filterDot} />}
             </TouchableOpacity>
           </View>
-
-          {(startDateObj || endDateObj) && (
-            <TouchableOpacity style={Styles.clearButton} onPress={clearDateFilters}>
-              <Text style={Styles.clearButtonText}>Clear Dates</Text>
-            </TouchableOpacity>
-          )}
-
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDateObj || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onStartDateChange}
-              maximumDate={endDateObj || new Date()}
-            />
-          )}
-
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDateObj || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onEndDateChange}
-              minimumDate={startDateObj || undefined}
-              maximumDate={new Date()}
-            />
-          )}
         </View>
 
         <SectionList
-          sections={groupedAttendance}
-          renderItem={renderAttendanceItem}
+          sections={groupedRoster}
+          renderItem={renderRosterItem}
           ListFooterComponent={renderFooter}
           renderSectionHeader={({ section: { title } }) => (
             <View style={Styles.sectionHeaderContainer}>
@@ -344,17 +351,119 @@ const Report = () => {
             </View>
           )}
           keyExtractor={keyExtractor}
-          contentContainerStyle={attendance.length === 0 ? Styles.listContainer : Styles.listContent}
+          contentContainerStyle={roster.length === 0 ? Styles.listContainer : Styles.listContent}
           ListEmptyComponent={() => renderEmptyComponent({ loading })}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           showsVerticalScrollIndicator={false}
-          stickySectionHeadersEnabled={true}
+          stickySectionHeadersEnabled
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
         />
       </View>
+
+      {/* Filter bottom sheet */}
+      <Modal visible={sheetVisible} transparent animationType="slide" onRequestClose={() => setSheetVisible(false)}>
+        <Pressable style={Styles.sheetOverlay} onPress={() => setSheetVisible(false)}>
+          <Pressable style={Styles.sheet}>
+            <View style={Styles.sheetHandle} />
+            <Text style={Styles.sheetTitle}>Filters</Text>
+
+            <Text style={Styles.sheetSectionLabel}>STATUS</Text>
+            <View style={Styles.chipsWrap}>
+              {STATUS_OPTIONS.map((opt) => {
+                const active = draftStatus === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[Styles.chip, active && Styles.chipActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setDraftStatus(opt.key)}
+                  >
+                    <Text style={[Styles.chipText, active && Styles.chipTextActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={Styles.sheetSectionLabel}>DATE</Text>
+            <View style={Styles.chipsWrap}>
+              {DATE_OPTIONS.map((opt) => {
+                const active = draftPreset === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[Styles.chip, active && Styles.chipActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setDraftPreset(opt.key)}
+                  >
+                    <Text style={[Styles.chipText, active && Styles.chipTextActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {draftPreset === 'custom' && (
+              <View style={[Styles.dateFilterRow, Styles.customRange]}>
+                <TouchableOpacity
+                  style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
+                  onPress={() => setShowStartPicker(true)}
+                >
+                  <Icon name="calendar" size="sm" color={draftStart ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
+                  <Text style={draftStart ? Styles.datePickerText : Styles.datePickerPlaceholder}>
+                    {draftStart ? formatPickerDate(draftStart) : 'Start Date'}
+                  </Text>
+                </TouchableOpacity>
+                <View style={Styles.dateArrowContainer}>
+                  <Icon name="arrow-left-right" size="sm" color={colors.SURFACE_TEXT_MUTED} />
+                </View>
+                <TouchableOpacity
+                  style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
+                  onPress={() => setShowEndPicker(true)}
+                >
+                  <Icon name="calendar" size="sm" color={draftEnd ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
+                  <Text style={draftEnd ? Styles.datePickerText : Styles.datePickerPlaceholder}>
+                    {draftEnd ? formatPickerDate(draftEnd) : 'End Date'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {showStartPicker && (
+              <DateTimePicker
+                value={draftStart || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onStartChange}
+                maximumDate={draftEnd || new Date()}
+              />
+            )}
+            {showEndPicker && (
+              <DateTimePicker
+                value={draftEnd || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onEndChange}
+                minimumDate={draftStart || undefined}
+                maximumDate={new Date()}
+              />
+            )}
+
+            <View style={Styles.sheetActions}>
+              <TouchableOpacity style={Styles.resetButton} activeOpacity={0.85} onPress={resetFilters}>
+                <Text style={Styles.resetButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[Styles.applyButton, !customReady && { opacity: 0.5 }]}
+                activeOpacity={0.85}
+                onPress={applyFilters}
+                disabled={!customReady}
+              >
+                <Text style={Styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };

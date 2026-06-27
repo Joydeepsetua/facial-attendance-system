@@ -9,6 +9,8 @@ export interface Attendance {
   id: string;
   user_id: string;
   user_name?: string;
+  user_phone?: string;
+  user_employee_id?: string;
   punch_in?: string;
   punch_out?: string;
   created_at?: string;
@@ -158,9 +160,11 @@ export const getAllAttendance = async (
             a.user_id, 
             a.punch_in,
             a.punch_out,
-            a.created_at, 
+            a.created_at,
             a.is_active,
-            u.name as user_name
+            u.name as user_name,
+            u.phone as user_phone,
+            u.employee_id as user_employee_id
           FROM ${TN_ATTENDANCE} a
           INNER JOIN ${TN_USERS} u ON a.user_id = u.uuid
           ${whereClause}
@@ -180,6 +184,8 @@ export const getAllAttendance = async (
                   id: item.id,
                   user_id: item.user_id,
                   user_name: item.user_name,
+                  user_phone: item.user_phone,
+                  user_employee_id: item.user_employee_id,
                   punch_in: item.punch_in,
                   punch_out: item.punch_out,
                   created_at: item.created_at,
@@ -213,6 +219,137 @@ export const getAllAttendance = async (
     }, (error) => {
       console.error("Transaction error:", error);
       resolve({ data: [], pagination: { currentPage: page, totalPages: 0, totalCount: 0, limit } });
+    });
+  });
+};
+
+// Roster row — one entry per (day × active user) across a date range, present or not.
+export interface RosterEntry {
+  day: string; // YYYY-MM-DD
+  user_id: string;
+  user_name: string;
+  user_phone?: string;
+  user_employee_id?: string;
+  punch_in?: string;
+  punch_out?: string;
+  status: 'present' | 'absent';
+}
+
+export type RosterStatus = 'all' | 'present' | 'absent';
+
+// GET ATTENDANCE ROSTER — for every day in [startDate, endDate] and every active
+// user, returns their attendance for that day (status 'present') or an 'absent'
+// entry when there's no record. A recursive CTE generates the calendar days, then
+// each day is cross-joined with users and left-joined onto attendance. Supports a
+// status filter (all/present/absent), name search and pagination.
+export const getAttendanceRoster = async (
+  startDate: string,
+  endDate: string,
+  status: RosterStatus = "all",
+  searchQuery: string = "",
+  limit: number = 20,
+  page: number = 1
+): Promise<PaginatedResponse<RosterEntry>> => {
+  return new Promise((resolve) => {
+    const emptyResponse: PaginatedResponse<RosterEntry> = {
+      data: [],
+      pagination: { currentPage: page, totalPages: 0, totalCount: 0, limit },
+    };
+
+    if (!startDate || !endDate) {
+      resolve(emptyResponse);
+      return;
+    }
+
+    // Filters shared by the COUNT and SELECT queries.
+    let filters = "";
+    const filterParams: any[] = [];
+    if (searchQuery.trim() !== "") {
+      filters += ` AND u.name LIKE ?`;
+      filterParams.push(`%${searchQuery.trim()}%`);
+    }
+    if (status === "present") filters += ` AND a.punch_in IS NOT NULL`;
+    else if (status === "absent") filters += ` AND a.punch_in IS NULL`;
+
+    const cte = `WITH RECURSIVE dates(d) AS (
+        SELECT ?
+        UNION ALL
+        SELECT date(d, '+1 day') FROM dates WHERE d < ?
+      )`;
+
+    const fromWhere = `FROM dates d
+      CROSS JOIN ${TN_USERS} u
+      LEFT JOIN ${TN_ATTENDANCE} a
+        ON a.user_id = u.uuid
+        AND a.is_active = 1
+        AND substr(a.created_at, 1, 10) = d.d
+      WHERE u.is_active = 1${filters}`;
+
+    const countQuery = `${cte} SELECT COUNT(*) as total ${fromWhere}`;
+    const countParams = [startDate, endDate, ...filterParams];
+
+    db.transaction((tx) => {
+      tx.executeSql(
+        countQuery,
+        countParams,
+        (_tx, countResult) => {
+          const totalCount = countResult.rows.item(0).total;
+          const totalPages = Math.ceil(totalCount / limit);
+          const offset = (page - 1) * limit;
+
+          const dataQuery = `${cte}
+            SELECT
+              d.d as day,
+              u.uuid as user_id,
+              u.name as user_name,
+              u.phone as user_phone,
+              u.employee_id as user_employee_id,
+              a.punch_in,
+              a.punch_out
+            ${fromWhere}
+            ORDER BY d.d DESC, (a.punch_in IS NULL) ASC, u.name COLLATE NOCASE ASC
+            LIMIT ? OFFSET ?`;
+          const dataParams = [startDate, endDate, ...filterParams, limit, offset];
+
+          _tx.executeSql(
+            dataQuery,
+            dataParams,
+            (__tx, dataResult) => {
+              const roster: RosterEntry[] = [];
+              for (let i = 0; i < dataResult.rows.length; i++) {
+                const item = dataResult.rows.item(i);
+                roster.push({
+                  day: item.day,
+                  user_id: item.user_id,
+                  user_name: item.user_name,
+                  user_phone: item.user_phone,
+                  user_employee_id: item.user_employee_id,
+                  punch_in: item.punch_in,
+                  punch_out: item.punch_out,
+                  status: item.punch_in ? 'present' : 'absent',
+                });
+              }
+              resolve({
+                data: roster,
+                pagination: { currentPage: page, totalPages, totalCount, limit },
+              });
+            },
+            (__t, error) => {
+              console.error("Error fetching roster data:", error);
+              resolve(emptyResponse);
+              return false;
+            }
+          );
+        },
+        (_t, error) => {
+          console.error("Error fetching roster count:", error);
+          resolve(emptyResponse);
+          return false;
+        }
+      );
+    }, (error) => {
+      console.error("Transaction error:", error);
+      resolve(emptyResponse);
     });
   });
 };

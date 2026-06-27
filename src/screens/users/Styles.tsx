@@ -81,6 +81,17 @@ const Styles = StyleSheet.create({
     fontSize: 12,
     color: colors.SURFACE_TEXT_MUTED,
   },
+  userPhoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  userPhoneText: {
+    fontSize: 12.5,
+    color: colors.SURFACE_TEXT_MUTED,
+    fontWeight: '500',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
