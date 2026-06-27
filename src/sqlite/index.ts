@@ -2,6 +2,7 @@ import SQLite from 'react-native-sqlite-2';
 import { createTableQureyUsers, TN_USERS, USER_COLUMN_MIGRATIONS } from './model/user';
 import { createTableQueryAttendance } from './model/attendance';
 import { createTableQueryOrganization } from './model/organization';
+import { createTableQuerySettings, TN_SETTINGS, DEFAULT_SETTINGS } from './model/settings';
 
 const db = SQLite.openDatabase('FacialAttendance.db', '1.0', '', 1);
 
@@ -19,7 +20,7 @@ export const getDBConnection = () => {
 // Migrations are written to be idempotent so re-running is always safe.
 // ────────────────────────────────────────────────────────────────────────────
 
-const DB_VERSION = 3;
+const DB_VERSION = 5;
 
 type Tx = any;
 
@@ -65,6 +66,45 @@ const addMissingUserColumns = (tx: Tx, done: () => void) => {
     );
 };
 
+// Inserts default feature flags (INSERT OR IGNORE keeps any existing rows).
+const seedSettings = (tx: Tx, done: () => void) => {
+    if (DEFAULT_SETTINGS.length === 0) {
+        done();
+        return;
+    }
+    let completed = 0;
+    const finishOne = () => {
+        completed += 1;
+        if (completed === DEFAULT_SETTINGS.length) done();
+    };
+    DEFAULT_SETTINGS.forEach((s) => {
+        tx.executeSql(
+            `INSERT OR IGNORE INTO ${TN_SETTINGS} (key, is_enabled, value) VALUES (?, ?, ?)`,
+            [s.key, s.is_enabled, s.value],
+            () => finishOne(),
+            (_t: Tx, error: any) => {
+                console.log(`Error seeding setting ${s.key}:`, error);
+                finishOne();
+                return false;
+            }
+        );
+    });
+};
+
+// Creates the settings table and seeds its default rows.
+const createAndSeedSettings = (tx: Tx, done: () => void) => {
+    tx.executeSql(
+        createTableQuerySettings,
+        [],
+        () => seedSettings(tx, done),
+        (_t: Tx, error: any) => {
+            console.log('Error creating settings table:', error);
+            done();
+            return false;
+        }
+    );
+};
+
 // Each entry upgrades the schema TO that version number.
 const MIGRATIONS: { [version: number]: (tx: Tx, done: () => void) => void } = {
     // v1 — base tables
@@ -96,6 +136,22 @@ const MIGRATIONS: { [version: number]: (tx: Tx, done: () => void) => void } = {
             () => done(),
             (_t: Tx, error: any) => {
                 console.log('Error creating organization table:', error);
+                done();
+                return false;
+            }
+        );
+    },
+    // v4 — settings / feature flags store (created + seeded with defaults)
+    4: (tx, done) => createAndSeedSettings(tx, done),
+    // v5 — settings schema reshaped (id, is_enabled, value, created_at). The table
+    // only holds regenerable feature flags, so drop & recreate + reseed is safe.
+    5: (tx, done) => {
+        tx.executeSql(
+            `DROP TABLE IF EXISTS ${TN_SETTINGS}`,
+            [],
+            () => createAndSeedSettings(tx, done),
+            (_t: Tx, error: any) => {
+                console.log('Error dropping settings table:', error);
                 done();
                 return false;
             }
