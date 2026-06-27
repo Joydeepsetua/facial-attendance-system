@@ -26,7 +26,11 @@ import colors from '../../constants/colors';
 import { createTable } from '../../sqlite';
 import { getAllUsers } from '../../sqlite/service/user';
 import { getAllAttendance } from '../../sqlite/service/attendance';
-import { runMarkAttendance, AttendanceOutcome } from '../../utils/markAttendance';
+import {
+  scanFaceForAttendance,
+  confirmAttendance,
+  PunchAction,
+} from '../../utils/markAttendance';
 import { showToast } from '../../utils/toast';
 import { isFeatureEnabled } from '../../sqlite/service/settings';
 import { SETTING_KEYS } from '../../sqlite/model/settings';
@@ -93,7 +97,10 @@ const Home = () => {
   const [payrollEnabled, setPayrollEnabled] = useState(true);
   const [stats, setStats] = useState({ users: 0, today: 0 });
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<AttendanceOutcome | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [pending, setPending] = useState<
+    { uuid: string; name: string; similarity: number; action: PunchAction } | null
+  >(null);
   const [bannerSize, setBannerSize] = useState({ width: 0, height: 0 });
   const absent = Math.max(stats.users - stats.today, 0);
 
@@ -128,22 +135,39 @@ const Home = () => {
     }, [loadStats]),
   );
 
-  // Run the whole attendance flow right here — camera opens directly, result
-  // shows in a popup, and we stay on the dashboard (no separate screen).
+  // Open the camera and match the face. We do NOT record attendance yet — the
+  // match is surfaced in a confirmation popup first.
   const handleMarkAttendance = useCallback(async () => {
     if (scanning) return;
     setScanning(true);
-    const outcome = await runMarkAttendance();
+    const outcome = await scanFaceForAttendance();
     setScanning(false);
     if (outcome.type === 'cancelled') return;
-    setResult(outcome);
-    if (outcome.type === 'success') {
-      showToast(outcome.message, 'success');
-      loadStats();
-    } else {
+    if (outcome.type === 'error') {
       showToast(outcome.message, 'error');
+      return;
     }
-  }, [scanning, loadStats]);
+    setPending(outcome);
+  }, [scanning]);
+
+  // Operator confirmed the match — record the punch, toast the result, then jump
+  // straight back to scanning the next person (no extra prompt).
+  const handleConfirmAttendance = useCallback(async () => {
+    if (!pending) return;
+    setCommitting(true);
+    const res = await confirmAttendance(pending.uuid);
+    setCommitting(false);
+    setPending(null);
+    showToast(res.message, res.success ? 'success' : 'error');
+    if (res.success) loadStats();
+    handleMarkAttendance();
+  }, [pending, loadStats, handleMarkAttendance]);
+
+  // "Scan Again" — discard this match and reopen the camera.
+  const handleScanAgain = useCallback(() => {
+    setPending(null);
+    handleMarkAttendance();
+  }, [handleMarkAttendance]);
 
   const overview: Stat[] = [
     { key: 'users', value: stats.users, label: 'Total Users', icon: 'users', accent: colors.ACCENT_BLUE },
@@ -329,57 +353,48 @@ const Home = () => {
         </View>
       </Modal>
 
-      {/* Attendance result popup */}
+      {/* Confirm punch in/out for the matched face */}
       <Modal
-        visible={result !== null}
+        visible={pending !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setResult(null)}
+        onRequestClose={() => {
+          if (!committing) setPending(null);
+        }}
       >
         <View style={Styles.modalOverlay}>
           <View style={Styles.resultCard}>
-            {result?.type === 'success' ? (
-              <>
-                <View
-                  style={[Styles.resultIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}
-                >
-                  <Icon name="user-check" size="xl" color={colors.ACCENT_GREEN} strokeWidth={2} />
-                </View>
-                <Text style={Styles.resultTitle}>{result.message}</Text>
-                <Text style={Styles.resultName}>{result.name}</Text>
-                <Text style={Styles.resultSub}>
-                  Match: {(result.similarity * 100).toFixed(1)}%
-                </Text>
-              </>
-            ) : (
-              <>
-                <View
-                  style={[Styles.resultIcon, { backgroundColor: `${colors.RED}18` }]}
-                >
-                  <Icon name="close" size="xl" color={colors.RED} strokeWidth={2.5} />
-                </View>
-                <Text style={Styles.resultTitle}>Not Recorded</Text>
-                <Text style={Styles.resultSub}>{result?.type === 'error' ? result.message : ''}</Text>
-              </>
-            )}
+            <View style={[Styles.resultIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}>
+              <Icon name="user-check" size="xl" color={colors.ACCENT_GREEN} strokeWidth={2} />
+            </View>
+            <Text style={Styles.resultTitle}>
+              {pending?.action === 'out' ? 'Punch Out' : 'Punch In'}
+            </Text>
+            <Text style={Styles.resultName}>{pending?.name}</Text>
+            <Text style={Styles.resultSub}>
+              Match: {pending ? (pending.similarity * 100).toFixed(1) : '0'}%
+            </Text>
 
             <View style={Styles.resultActions}>
               <TouchableOpacity
                 style={Styles.resultButtonOutline}
                 activeOpacity={0.85}
-                onPress={() => {
-                  setResult(null);
-                  handleMarkAttendance();
-                }}
+                onPress={handleScanAgain}
+                disabled={committing}
               >
                 <Text style={Styles.resultButtonOutlineText}>Scan Again</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={Styles.resultButton}
+                style={[Styles.resultButton, committing && { opacity: 0.6 }]}
                 activeOpacity={0.85}
-                onPress={() => setResult(null)}
+                onPress={handleConfirmAttendance}
+                disabled={committing}
               >
-                <Text style={Styles.resultButtonText}>Done</Text>
+                {committing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={Styles.resultButtonText}>Confirm</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

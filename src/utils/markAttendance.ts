@@ -2,19 +2,22 @@ import { NativeModules } from 'react-native';
 import { openCamera } from './camera';
 import { getAllUsers } from '../sqlite/service/user';
 import { findBestMatch } from './face';
-import { createAttendance } from '../sqlite/service/attendance';
+import { createAttendance, getTodayAttendanceAction } from '../sqlite/service/attendance';
 
-export type AttendanceOutcome =
+export type PunchAction = 'in' | 'out';
+
+export type ScanOutcome =
   | { type: 'cancelled' }
-  | { type: 'success'; name: string; similarity: number; message: string }
+  | { type: 'pending'; uuid: string; name: string; similarity: number; action: PunchAction }
   | { type: 'error'; message: string };
 
 /**
- * Full "mark attendance" flow: open the camera, build an embedding, match it
- * against registered users and record attendance. Returns a structured result
- * so the caller can decide how to present it (no navigation involved).
+ * Open the camera, build an embedding and match it against registered users.
+ * Resolves the matched user plus the action that WOULD be taken (punch in/out)
+ * but records nothing — the caller confirms with the operator first, then calls
+ * confirmAttendance().
  */
-export const runMarkAttendance = async (): Promise<AttendanceOutcome> => {
+export const scanFaceForAttendance = async (): Promise<ScanOutcome> => {
   try {
     const base64Image = await openCamera();
     if (!base64Image) {
@@ -34,23 +37,27 @@ export const runMarkAttendance = async (): Promise<AttendanceOutcome> => {
       return { type: 'error', message: 'No matching user found' };
     }
 
-    const result = await createAttendance(match.uuid);
-    if (!result.success) {
-      return { type: 'error', message: result.message };
+    const action = await getTodayAttendanceAction(match.uuid);
+    if (action === 'completed') {
+      return { type: 'error', message: 'Attendance for today already completed!' };
     }
 
     return {
-      type: 'success',
+      type: 'pending',
+      uuid: match.uuid,
       name: match.name,
       similarity: match.similarity,
-      message: result.message,
+      action,
     };
   } catch (error: any) {
-    console.error('Error marking attendance:', error);
+    console.error('Error scanning face:', error);
     const errorMessage = error?.message || error?.toString() || '';
     if (errorMessage.includes('No face detected')) {
       return { type: 'error', message: 'No face detected' };
     }
-    return { type: 'error', message: 'Failed to mark attendance' };
+    return { type: 'error', message: 'Failed to scan face' };
   }
 };
+
+/** Record the confirmed punch in/out for the matched user. */
+export const confirmAttendance = (uuid: string) => createAttendance(uuid);

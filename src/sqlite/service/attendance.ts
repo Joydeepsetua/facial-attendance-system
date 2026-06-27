@@ -111,6 +111,36 @@ export const createAttendance = async (userId: string): Promise<{ success: boole
   });
 };
 
+// PEEK TODAY'S NEXT ACTION — what createAttendance WOULD do for this user today,
+// without recording anything. Used to confirm with the operator before punching.
+export type TodayAttendanceAction = "in" | "out" | "completed";
+
+export const getTodayAttendanceAction = async (
+  userId: string
+): Promise<TodayAttendanceAction> => {
+  return new Promise((resolve) => {
+    const currentDateTime = formatDateForSQLite(new Date());
+    const query = `SELECT punch_out FROM ${TN_ATTENDANCE} WHERE user_id = ? AND substr(created_at, 1, 10) = substr(?, 1, 10) AND is_active = 1`;
+    db.transaction((tx) => {
+      tx.executeSql(
+        query,
+        [userId, currentDateTime],
+        (_tx, result) => {
+          if (result.rows.length === 0) resolve("in");
+          else if (!result.rows.item(0).punch_out) resolve("out");
+          else resolve("completed");
+        },
+        (_t, error) => {
+          console.log("getTodayAttendanceAction error: ", error);
+          // Fall back to "in" — createAttendance re-checks before committing anyway.
+          resolve("in");
+          return false;
+        }
+      );
+    });
+  });
+};
+
 // GET ALL ATTENDANCE RECORDS (With Filters & API-like Pagination)
 export const getAllAttendance = async (
   searchQuery: string = "",
