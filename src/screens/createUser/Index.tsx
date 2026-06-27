@@ -9,6 +9,7 @@ import {
   ScrollView,
   StatusBar,
   NativeModules,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -83,6 +84,7 @@ const CreateUser = () => {
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getNextEmployeeId().then(setEmployeeId);
@@ -134,14 +136,17 @@ const CreateUser = () => {
     const success = await createUser(buildInput(), embeddingArray);
     if (success) {
       showToast('User created successfully!', 'success');
+      // keep the loader on while we navigate away
       setTimeout(() => navigation.goBack(), 500);
     } else {
       showToast('Failed to create user', 'error');
+      setSaving(false);
     }
   };
 
   const handleCreateUser = async () => {
-    if (!validate()) return;
+    if (saving || !validate()) return;
+    setSaving(true);
 
     try {
       const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
@@ -151,6 +156,7 @@ const CreateUser = () => {
       if (duplicates.length > 0) {
         setPendingEmbedding(embeddingArray);
         setDuplicateMatches(duplicates);
+        setSaving(false); // pause while the user decides in the modal
         return;
       }
 
@@ -163,6 +169,7 @@ const CreateUser = () => {
       } else {
         showToast('Failed to create user', 'error');
       }
+      setSaving(false);
     }
   };
 
@@ -171,6 +178,7 @@ const CreateUser = () => {
     setDuplicateMatches([]);
     setPendingEmbedding(null);
     if (embeddingArray) {
+      setSaving(true);
       await saveUser(embeddingArray);
     }
   };
@@ -380,9 +388,23 @@ const CreateUser = () => {
           />
         </View>
 
-        <TouchableOpacity style={Styles.createButton} activeOpacity={0.85} onPress={handleCreateUser}>
-          <Icon name="user-plus" size="sm" color="#FFFFFF" strokeWidth={2.2} />
-          <Text style={Styles.createButtonText}>Create User</Text>
+        <TouchableOpacity
+          style={Styles.createButton}
+          activeOpacity={0.85}
+          onPress={handleCreateUser}
+          disabled={saving}
+        >
+          {saving ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={Styles.createButtonText}>Creating…</Text>
+            </>
+          ) : (
+            <>
+              <Icon name="user-plus" size="sm" color="#FFFFFF" strokeWidth={2.2} />
+              <Text style={Styles.createButtonText}>Create User</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
 

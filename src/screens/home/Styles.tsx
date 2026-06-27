@@ -183,7 +183,7 @@ const Styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     ...cardShadow,
   },

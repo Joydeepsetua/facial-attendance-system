@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -58,6 +58,7 @@ interface FormErrors {
 
 const Organization = () => {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [logo, setLogo] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -67,19 +68,37 @@ const Organization = () => {
   const [gstin, setGstin] = useState('');
   const [pan, setPan] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
+  // Snapshot of the persisted values — the form is "dirty" when it differs.
+  const [baseline, setBaseline] = useState('');
+
+  // Serialised current form, used to compare against the saved baseline.
+  const current = useMemo(
+    () => JSON.stringify({ logo, name, phone, email, address, website, gstin, pan }),
+    [logo, name, phone, email, address, website, gstin, pan],
+  );
+  const isDirty = current !== baseline;
 
   useEffect(() => {
     getOrganization().then((org) => {
-      if (org) {
-        setLogo(org.logo ?? null);
-        setName(org.name ?? '');
-        setPhone(org.phone ?? '');
-        setEmail(org.email ?? '');
-        setAddress(org.address ?? '');
-        setWebsite(org.website ?? '');
-        setGstin(org.gstin ?? '');
-        setPan(org.pan ?? '');
-      }
+      const loaded = {
+        logo: org?.logo ?? null,
+        name: org?.name ?? '',
+        phone: org?.phone ?? '',
+        email: org?.email ?? '',
+        address: org?.address ?? '',
+        website: org?.website ?? '',
+        gstin: org?.gstin ?? '',
+        pan: org?.pan ?? '',
+      };
+      setLogo(loaded.logo);
+      setName(loaded.name);
+      setPhone(loaded.phone);
+      setEmail(loaded.email);
+      setAddress(loaded.address);
+      setWebsite(loaded.website);
+      setGstin(loaded.gstin);
+      setPan(loaded.pan);
+      setBaseline(JSON.stringify(loaded));
       setLoading(false);
     });
   }, []);
@@ -106,21 +125,27 @@ const Organization = () => {
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
-    const success = await saveOrganization({
-      name,
-      logo,
-      phone,
-      email,
-      address,
-      website,
-      gstin,
-      pan,
-    });
-    if (success) {
-      showToast('Organization details saved!', 'success');
-    } else {
-      showToast('Failed to save organization', 'error');
+    if (saving || !isDirty || !validate()) return;
+    setSaving(true);
+    try {
+      const success = await saveOrganization({
+        name,
+        logo,
+        phone,
+        email,
+        address,
+        website,
+        gstin,
+        pan,
+      });
+      if (success) {
+        setBaseline(current); // snapshot the just-saved values → button disables again
+        showToast('Organization details saved!', 'success');
+      } else {
+        showToast('Failed to save organization', 'error');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -254,9 +279,30 @@ const Organization = () => {
           />
         </View>
 
-        <TouchableOpacity style={Styles.createButton} activeOpacity={0.85} onPress={handleSave}>
-          <Icon name="check" size="sm" color="#FFFFFF" strokeWidth={2.5} />
-          <Text style={Styles.createButtonText}>Save Details</Text>
+        <TouchableOpacity
+          style={[Styles.createButton, !isDirty && !saving && Styles.createButtonDisabled]}
+          activeOpacity={0.85}
+          onPress={handleSave}
+          disabled={!isDirty || saving}
+        >
+          {saving ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={Styles.createButtonText}>Saving…</Text>
+            </>
+          ) : (
+            <>
+              <Icon
+                name="check"
+                size="sm"
+                color={isDirty ? '#FFFFFF' : colors.SURFACE_TEXT_MUTED}
+                strokeWidth={2.5}
+              />
+              <Text style={[Styles.createButtonText, !isDirty && Styles.createButtonTextDisabled]}>
+                Save Details
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -87,6 +87,7 @@ const EditUser = () => {
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
 
   const clearError = (key: keyof FormErrors) =>
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
@@ -160,14 +161,17 @@ const EditUser = () => {
     const success = await updateUser(userUuid, buildInput(), newEmbedding);
     if (success) {
       showToast('User updated successfully!', 'success');
+      // keep the loader on while we navigate away
       setTimeout(() => navigation.goBack(), 500);
     } else {
       showToast('Failed to update user', 'error');
+      setSaving(false);
     }
   };
 
   const handleUpdateUser = async () => {
-    if (!validate()) return;
+    if (saving || !validate()) return;
+    setSaving(true);
 
     try {
       let newEmbedding: number[] | undefined;
@@ -180,6 +184,7 @@ const EditUser = () => {
         if (duplicates.length > 0) {
           setPendingEmbedding(newEmbedding!);
           setDuplicateMatches(duplicates);
+          setSaving(false); // pause while the user decides in the modal
           return;
         }
       }
@@ -193,6 +198,7 @@ const EditUser = () => {
       } else {
         showToast('Failed to update user', 'error');
       }
+      setSaving(false);
     }
   };
 
@@ -201,6 +207,7 @@ const EditUser = () => {
     setDuplicateMatches([]);
     setPendingEmbedding(null);
     if (embeddingArray) {
+      setSaving(true);
       await persistUpdate(embeddingArray);
     }
   };
@@ -416,9 +423,23 @@ const EditUser = () => {
           />
         </View>
 
-        <TouchableOpacity style={Styles.createButton} activeOpacity={0.85} onPress={handleUpdateUser}>
-          <Icon name="check" size="sm" color="#FFFFFF" strokeWidth={2.5} />
-          <Text style={Styles.createButtonText}>Update User</Text>
+        <TouchableOpacity
+          style={Styles.createButton}
+          activeOpacity={0.85}
+          onPress={handleUpdateUser}
+          disabled={saving}
+        >
+          {saving ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={Styles.createButtonText}>Updating…</Text>
+            </>
+          ) : (
+            <>
+              <Icon name="check" size="sm" color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={Styles.createButtonText}>Update User</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
 

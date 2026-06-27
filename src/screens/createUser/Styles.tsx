@@ -262,10 +262,18 @@ const Styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
+  createButtonDisabled: {
+    backgroundColor: colors.SURFACE_BORDER,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   createButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  createButtonTextDisabled: {
+    color: colors.SURFACE_TEXT_MUTED,
   },
 });
 
