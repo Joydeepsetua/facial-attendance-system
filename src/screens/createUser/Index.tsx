@@ -101,7 +101,7 @@ const CreateUser = () => {
     const e: FormErrors = {};
     if (!fullName.trim()) e.name = 'Full name is required';
     if (!phone.trim()) e.phone = 'Phone number is required';
-    else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) e.phone = 'Enter a valid phone number';
+    else if (!/^[0-9]{10}$/.test(phone.trim())) e.phone = 'Enter a valid 10 digit phone number';
     if (!gender) e.gender = 'Please select gender';
     if (!base64Image) e.photo = 'Profile photo is required';
     e.email = validateEmail(email);
@@ -243,9 +243,10 @@ const CreateUser = () => {
             label="Phone *"
             placeholder="Enter phone number"
             keyboardType="phone-pad"
+            maxLength={10}
             value={phone}
             onChangeText={(t) => {
-              setPhone(t);
+              setPhone(t.replace(/[^0-9]/g, '').slice(0, 10));
               clearError('phone');
             }}
             error={errors.phone}

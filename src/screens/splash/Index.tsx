@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, ImageBackground, View } from 'react-native';
+import { Animated, Easing, ImageBackground, StatusBar, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppContainer';
@@ -66,6 +66,7 @@ const SplashScreen = () => {
 
   return (
     <Animated.View style={[Styles.container, { opacity: bgOpacity }]}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <ImageBackground
         source={require('../../assets/images/splash_bg.png')}
         style={Styles.background}
