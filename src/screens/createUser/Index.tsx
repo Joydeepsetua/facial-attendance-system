@@ -25,6 +25,8 @@ import { showToast } from '../../utils/toast';
 import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { validateEmail, validateIfsc, validatePan, validateUan } from '../../utils/validation';
 import { RootStackParamList } from '../../navigation/AppContainer';
+import { isFeatureEnabled } from '../../sqlite/service/settings';
+import { SETTING_KEYS } from '../../sqlite/model/settings';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -64,6 +66,7 @@ interface FormErrors {
 
 const CreateUser = () => {
   const navigation = useNavigation<NavigationProp>();
+  const [payrollEnabled, setPayrollEnabled] = useState(true);
 
   const [employeeId, setEmployeeId] = useState('');
   const [fullName, setFullName] = useState('');
@@ -88,6 +91,7 @@ const CreateUser = () => {
 
   useEffect(() => {
     getNextEmployeeId().then(setEmployeeId);
+    isFeatureEnabled(SETTING_KEYS.PAYROLL_ENABLED, true).then(setPayrollEnabled);
   }, []);
 
   const clearError = (key: keyof FormErrors) =>
@@ -291,7 +295,8 @@ const CreateUser = () => {
           />
         </View>
 
-        {/* Salary */}
+        {/* Salary — only when the Payroll feature is enabled */}
+        {payrollEnabled && (
         <View style={Styles.card}>
           <View style={Styles.sectionHeader}>
             <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_AMBER}18` }]}>
@@ -334,8 +339,10 @@ const CreateUser = () => {
             <Text style={Styles.helperText}>Payroll = daily amount × days present (from attendance)</Text>
           )}
         </View>
+        )}
 
-        {/* Bank & Statutory */}
+        {/* Bank & Statutory — only when the Payroll feature is enabled */}
+        {payrollEnabled && (
         <View style={Styles.card}>
           <View style={Styles.sectionHeader}>
             <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}>
@@ -387,6 +394,7 @@ const CreateUser = () => {
             error={errors.uan}
           />
         </View>
+        )}
 
         <TouchableOpacity
           style={Styles.createButton}

@@ -25,6 +25,8 @@ import { showToast } from '../../utils/toast';
 import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { validateEmail, validateIfsc, validatePan, validateUan } from '../../utils/validation';
 import { RootStackParamList } from '../../navigation/AppContainer';
+import { isFeatureEnabled } from '../../sqlite/service/settings';
+import { SETTING_KEYS } from '../../sqlite/model/settings';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditUserRouteProp = RouteProp<RootStackParamList, 'EditUser'>;
@@ -65,6 +67,7 @@ const EditUser = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditUserRouteProp>();
   const { userUuid } = route.params;
+  const [payrollEnabled, setPayrollEnabled] = useState(true);
 
   const [employeeId, setEmployeeId] = useState('');
   const [fullName, setFullName] = useState('');
@@ -109,6 +112,7 @@ const EditUser = () => {
 
   useEffect(() => {
     const loadUser = async () => {
+      setPayrollEnabled(await isFeatureEnabled(SETTING_KEYS.PAYROLL_ENABLED, true));
       const user = await getUserByUuid(userUuid);
       if (user) {
         setEmployeeId(user.employee_id || '');
@@ -326,7 +330,8 @@ const EditUser = () => {
           <LabeledInput label="Address" placeholder="Enter address" multiline value={address} onChangeText={setAddress} />
         </View>
 
-        {/* Salary */}
+        {/* Salary — only when the Payroll feature is enabled */}
+        {payrollEnabled && (
         <View style={Styles.card}>
           <View style={Styles.sectionHeader}>
             <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_AMBER}18` }]}>
@@ -369,8 +374,10 @@ const EditUser = () => {
             <Text style={Styles.helperText}>Payroll = daily amount × days present (from attendance)</Text>
           )}
         </View>
+        )}
 
-        {/* Bank & Statutory */}
+        {/* Bank & Statutory — only when the Payroll feature is enabled */}
+        {payrollEnabled && (
         <View style={Styles.card}>
           <View style={Styles.sectionHeader}>
             <View style={[Styles.sectionIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}>
@@ -422,6 +429,7 @@ const EditUser = () => {
             error={errors.uan}
           />
         </View>
+        )}
 
         <TouchableOpacity
           style={Styles.createButton}

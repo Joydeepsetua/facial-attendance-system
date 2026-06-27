@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StatusBar, Switch, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StatusBar, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../../components/header/Index';
 import Icon from '../../components/icons/Index';
@@ -7,19 +7,17 @@ import ConfirmModal from '../../components/confirmModal/Index';
 import colors from '../../constants/colors';
 import Styles from './Styles';
 import { showToast } from '../../utils/toast';
-import { isPayrollEnabled, setPayrollEnabled } from '../../sqlite/service/settings';
+import { isFeatureEnabled, saveSetting } from '../../sqlite/service/settings';
+import { SETTING_KEYS } from '../../sqlite/model/settings';
 
 const FeatureMaster = () => {
-  const [loading, setLoading] = useState(true);
-  const [payrollOn, setPayrollOn] = useState(false);
+  const [payrollEnabled, setPayrollEnabled] = useState(true);
   const [pendingValue, setPendingValue] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Load the current flag value from the settings table by key.
   useEffect(() => {
-    isPayrollEnabled().then((enabled) => {
-      setPayrollOn(enabled);
-      setLoading(false);
-    });
+    isFeatureEnabled(SETTING_KEYS.PAYROLL_ENABLED, true).then(setPayrollEnabled);
   }, []);
 
   // Toggling only opens the confirmation modal — nothing changes until confirmed.
@@ -30,10 +28,10 @@ const FeatureMaster = () => {
   const confirm = async () => {
     if (pendingValue === null) return;
     setSaving(true);
-    const success = await setPayrollEnabled(pendingValue);
+    const success = await saveSetting(SETTING_KEYS.PAYROLL_ENABLED, pendingValue, null);
     setSaving(false);
     if (success) {
-      setPayrollOn(pendingValue);
+      setPayrollEnabled(pendingValue);
       showToast(pendingValue ? 'Payroll enabled' : 'Payroll disabled', 'success');
     } else {
       showToast('Failed to update feature', 'error');
@@ -42,18 +40,6 @@ const FeatureMaster = () => {
   };
 
   const enabling = pendingValue === true;
-
-  if (loading) {
-    return (
-      <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
-        <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
-        <Header title="Feature Master" showBack />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.BRAND} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
@@ -71,10 +57,10 @@ const FeatureMaster = () => {
               <Text style={Styles.rowSubtitle}>Salary, payslips & payout calculations</Text>
             </View>
             <Switch
-              value={payrollOn}
+              value={payrollEnabled}
               onValueChange={handleToggle}
               trackColor={{ false: colors.SURFACE_BORDER, true: `${colors.BRAND}99` }}
-              thumbColor={payrollOn ? colors.BRAND : '#FFFFFF'}
+              thumbColor={payrollEnabled ? colors.BRAND : '#FFFFFF'}
               ios_backgroundColor={colors.SURFACE_BORDER}
             />
           </View>

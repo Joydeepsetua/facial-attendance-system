@@ -28,6 +28,8 @@ import { getAllUsers } from '../../sqlite/service/user';
 import { getAllAttendance } from '../../sqlite/service/attendance';
 import { runMarkAttendance, AttendanceOutcome } from '../../utils/markAttendance';
 import { showToast } from '../../utils/toast';
+import { isFeatureEnabled } from '../../sqlite/service/settings';
+import { SETTING_KEYS } from '../../sqlite/model/settings';
 import Icon from '../../components/icons/Index';
 import { AppIconName } from '../../components/icons/icons';
 
@@ -88,6 +90,7 @@ const longDate = () =>
 const Home = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const [payrollEnabled, setPayrollEnabled] = useState(true);
   const [stats, setStats] = useState({ users: 0, today: 0 });
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<AttendanceOutcome | null>(null);
@@ -110,6 +113,9 @@ const Home = () => {
       const today = todayString();
       const att = await getAllAttendance('', today, today, 1, 1);
       setStats({ users: users.length, today: att.pagination.totalCount });
+      // Read the payroll feature flag straight from the settings table by key.
+      const payroll = await isFeatureEnabled(SETTING_KEYS.PAYROLL_ENABLED, true);
+      setPayrollEnabled(payroll);
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
     }
@@ -145,7 +151,7 @@ const Home = () => {
     { key: 'absent', value: absent, label: 'Absent', icon: 'x-circle', accent: colors.RED },
   ];
 
-  const actions: Action[] = [
+  const actions: Action[] = ([
     {
       key: 'attendance',
       title: 'Mark Attendance',
@@ -194,7 +200,7 @@ const Home = () => {
       accent: colors.ACCENT_SLATE,
       onPress: () => navigation.navigate('Settings'),
     },
-  ];
+  ] as Action[]).filter((action) => action.key !== 'payroll' || payrollEnabled);
 
   return (
     <SafeAreaView style={Styles.screen} edges={['bottom']}>
