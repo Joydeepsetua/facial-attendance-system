@@ -299,6 +299,39 @@ const Styles = StyleSheet.create({
     fontWeight: '700',
     color: dash.TEXT,
   },
+  // Colored accent bar at the top of the confirm card (green=in, orange=out).
+  actionAccent: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    marginBottom: 18,
+  },
+  // Bold pill that states the action (PUNCH IN / PUNCH OUT) in the action color.
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    marginTop: 2,
+  },
+  actionPillText: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 10,
+  },
+  matchText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: dash.TEXT_MUTED,
+  },
 });
 
 export default Styles;

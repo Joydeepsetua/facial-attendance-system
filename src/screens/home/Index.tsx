@@ -163,11 +163,16 @@ const Home = () => {
     handleMarkAttendance();
   }, [pending, loadStats, handleMarkAttendance]);
 
-  // "Scan Again" — discard this match and reopen the camera.
-  const handleScanAgain = useCallback(() => {
+  // "Cancel" — discard this match and return to the dashboard.
+  const handleCancelConfirm = useCallback(() => {
     setPending(null);
-    handleMarkAttendance();
-  }, [handleMarkAttendance]);
+  }, []);
+
+  // Distinct visual identity per action so the operator reads it at a glance.
+  const isOut = pending?.action === 'out';
+  const actionColor = isOut ? colors.ACCENT_ORANGE : colors.ACCENT_GREEN;
+  const actionIcon: AppIconName = isOut ? 'logout' : 'user-check';
+  const actionLabel = isOut ? 'PUNCH OUT' : 'PUNCH IN';
 
   const overview: Stat[] = [
     { key: 'users', value: stats.users, label: 'Total Users', icon: 'users', accent: colors.ACCENT_BLUE },
@@ -364,28 +369,41 @@ const Home = () => {
       >
         <View style={Styles.modalOverlay}>
           <View style={Styles.resultCard}>
-            <View style={[Styles.resultIcon, { backgroundColor: `${colors.ACCENT_GREEN}18` }]}>
-              <Icon name="user-check" size="xl" color={colors.ACCENT_GREEN} strokeWidth={2} />
+            <View style={[Styles.actionAccent, { backgroundColor: actionColor }]} />
+
+            <View style={[Styles.resultIcon, { backgroundColor: `${actionColor}18` }]}>
+              <Icon name={actionIcon} size="xl" color={actionColor} strokeWidth={2} />
             </View>
-            <Text style={Styles.resultTitle}>
-              {pending?.action === 'out' ? 'Punch Out' : 'Punch In'}
-            </Text>
+
+            <View style={[Styles.actionPill, { backgroundColor: `${actionColor}18` }]}>
+              <Icon
+                name={isOut ? 'logout' : 'check'}
+                size="sm"
+                color={actionColor}
+                strokeWidth={2.5}
+              />
+              <Text style={[Styles.actionPillText, { color: actionColor }]}>{actionLabel}</Text>
+            </View>
+
             <Text style={Styles.resultName}>{pending?.name}</Text>
-            <Text style={Styles.resultSub}>
-              Match: {pending ? (pending.similarity * 100).toFixed(1) : '0'}%
-            </Text>
+
+            <View style={Styles.matchRow}>
+              <Text style={Styles.matchText}>
+                Match {pending ? (pending.similarity * 100).toFixed(1) : '0'}%
+              </Text>
+            </View>
 
             <View style={Styles.resultActions}>
               <TouchableOpacity
                 style={Styles.resultButtonOutline}
                 activeOpacity={0.85}
-                onPress={handleScanAgain}
+                onPress={handleCancelConfirm}
                 disabled={committing}
               >
-                <Text style={Styles.resultButtonOutlineText}>Scan Again</Text>
+                <Text style={Styles.resultButtonOutlineText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[Styles.resultButton, committing && { opacity: 0.6 }]}
+                style={[Styles.resultButton, { backgroundColor: actionColor }, committing && { opacity: 0.6 }]}
                 activeOpacity={0.85}
                 onPress={handleConfirmAttendance}
                 disabled={committing}
@@ -393,7 +411,7 @@ const Home = () => {
                 {committing ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={Styles.resultButtonText}>Confirm</Text>
+                  <Text style={Styles.resultButtonText}>{isOut ? 'Confirm Out' : 'Confirm In'}</Text>
                 )}
               </TouchableOpacity>
             </View>
