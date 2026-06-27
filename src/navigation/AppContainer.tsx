@@ -8,6 +8,9 @@ import Report from '../screens/report/Index';
 import Users from '../screens/users/Index';
 import EditUser from '../screens/editUser/Index';
 import ComingSoon from '../screens/comingSoon/Index';
+import Settings from '../screens/settings/Index';
+import Organization from '../screens/organization/Index';
+import FeatureMaster from '../screens/featureMaster/Index';
 
 
 export type RootStackParamList = {
@@ -19,6 +22,8 @@ export type RootStackParamList = {
     Users: undefined;
     Payroll: undefined;
     Settings: undefined;
+    Organization: undefined;
+    FeatureMaster: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -34,7 +39,9 @@ function AppContainer(props: any) {
             <Stack.Screen name="Users" component={Users} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="EditUser" component={EditUser} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Payroll" component={ComingSoon} options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="Settings" component={ComingSoon} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Settings" component={Settings} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Organization" component={Organization} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="FeatureMaster" component={FeatureMaster} options={{ animation: 'slide_from_right' }} />
         </Stack.Navigator>
     )
 }

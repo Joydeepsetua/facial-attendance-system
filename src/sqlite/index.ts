@@ -1,6 +1,7 @@
 import SQLite from 'react-native-sqlite-2';
 import { createTableQureyUsers, TN_USERS, USER_COLUMN_MIGRATIONS } from './model/user';
 import { createTableQueryAttendance } from './model/attendance';
+import { createTableQueryOrganization } from './model/organization';
 
 const db = SQLite.openDatabase('FacialAttendance.db', '1.0', '', 1);
 
@@ -18,7 +19,7 @@ export const getDBConnection = () => {
 // Migrations are written to be idempotent so re-running is always safe.
 // ────────────────────────────────────────────────────────────────────────────
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 type Tx = any;
 
@@ -87,6 +88,19 @@ const MIGRATIONS: { [version: number]: (tx: Tx, done: () => void) => void } = {
     },
     // v2 — HR fields on users (employee_id, phone, salary, bank, statutory, …)
     2: (tx, done) => addMissingUserColumns(tx, done),
+    // v3 — organization profile (company details for payslips / payroll)
+    3: (tx, done) => {
+        tx.executeSql(
+            createTableQueryOrganization,
+            [],
+            () => done(),
+            (_t: Tx, error: any) => {
+                console.log('Error creating organization table:', error);
+                done();
+                return false;
+            }
+        );
+    },
 };
 
 // Run migrations from the current version up to DB_VERSION, in order.

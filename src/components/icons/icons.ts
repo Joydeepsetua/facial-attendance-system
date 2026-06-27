@@ -29,6 +29,13 @@ import {
   XCircle,
   ChartNoAxesCombined,
   CreditCard,
+  Eye,
+  Lock,
+  Headphones,
+  CircleQuestionMark,
+  LogOut,
+  Building2,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -62,6 +69,13 @@ export const ICON_MAP = {
   "x-circle": XCircle,
   "chart-no-axes-combined": ChartNoAxesCombined,
   card: CreditCard,
+  eye: Eye,
+  lock: Lock,
+  headphones: Headphones,
+  help: CircleQuestionMark,
+  logout: LogOut,
+  building: Building2,
+  sliders: SlidersHorizontal,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;
