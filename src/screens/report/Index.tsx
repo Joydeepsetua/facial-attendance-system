@@ -8,6 +8,7 @@ import { getAttendanceRoster, RosterEntry, RosterStatus } from '../../sqlite/ser
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import Icon from '../../components/icons/Index';
+import { AppIconName } from '../../components/icons/icons';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
@@ -17,13 +18,20 @@ const STATUS_OPTIONS: { key: RosterStatus; label: string }[] = [
   { key: 'absent', label: 'Absent' },
 ];
 
-const DATE_OPTIONS: { key: DatePreset; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'yesterday', label: 'Yesterday' },
-  { key: 'week', label: 'This Week' },
-  { key: 'month', label: 'This Month' },
-  { key: 'custom', label: 'Custom' },
+const DATE_OPTIONS: { key: DatePreset; label: string; icon: AppIconName }[] = [
+  { key: 'today', label: 'Today', icon: 'calendar' },
+  { key: 'yesterday', label: 'Yesterday', icon: 'clock' },
+  { key: 'week', label: 'This Week', icon: 'chart-no-axes-combined' },
+  { key: 'month', label: 'This Month', icon: 'calendar' },
+  { key: 'custom', label: 'Custom', icon: 'calendar' },
 ];
+
+// Inactive dot colour per status for the filter chips.
+const STATUS_DOT_STYLE: Record<RosterStatus, object> = {
+  all: Styles.chipDotAll,
+  present: Styles.statusDotPresent,
+  absent: Styles.statusDotAbsent,
+};
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -366,7 +374,12 @@ const Report = () => {
         <Pressable style={Styles.sheetOverlay} onPress={() => setSheetVisible(false)}>
           <Pressable style={Styles.sheet}>
             <View style={Styles.sheetHandle} />
-            <Text style={Styles.sheetTitle}>Filters</Text>
+            <View style={Styles.sheetHeader}>
+              <Text style={Styles.sheetTitle}>Filters</Text>
+              <TouchableOpacity style={Styles.sheetClose} activeOpacity={0.7} onPress={() => setSheetVisible(false)}>
+                <Icon name="close" size="sm" color={colors.SURFACE_TEXT_MUTED} strokeWidth={2.4} />
+              </TouchableOpacity>
+            </View>
 
             <Text style={Styles.sheetSectionLabel}>STATUS</Text>
             <View style={Styles.chipsWrap}>
@@ -379,13 +392,20 @@ const Report = () => {
                     activeOpacity={0.85}
                     onPress={() => setDraftStatus(opt.key)}
                   >
+                    {active ? (
+                      <Icon name="check" size="xs" color={colors.BRAND} strokeWidth={3} />
+                    ) : (
+                      <View style={[Styles.statusDot, STATUS_DOT_STYLE[opt.key]]} />
+                    )}
                     <Text style={[Styles.chipText, active && Styles.chipTextActive]}>{opt.label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <Text style={Styles.sheetSectionLabel}>DATE</Text>
+            <View style={Styles.sheetDivider} />
+
+            <Text style={Styles.sheetSectionLabel}>DATE RANGE</Text>
             <View style={Styles.chipsWrap}>
               {DATE_OPTIONS.map((opt) => {
                 const active = draftPreset === opt.key;
@@ -396,35 +416,47 @@ const Report = () => {
                     activeOpacity={0.85}
                     onPress={() => setDraftPreset(opt.key)}
                   >
+                    <Icon name={opt.icon} size="xs" color={active ? colors.BRAND : colors.SURFACE_TEXT_MUTED} strokeWidth={2.2} />
                     <Text style={[Styles.chipText, active && Styles.chipTextActive]}>{opt.label}</Text>
+                    {active && (
+                      <View style={Styles.chipCheckCircle}>
+                        <Icon name="check" size="xxs" color="#FFFFFF" strokeWidth={3.2} />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
 
             {draftPreset === 'custom' && (
-              <View style={[Styles.dateFilterRow, Styles.customRange]}>
-                <TouchableOpacity
-                  style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
-                  onPress={() => setShowStartPicker(true)}
-                >
-                  <Icon name="calendar" size="sm" color={draftStart ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
-                  <Text style={draftStart ? Styles.datePickerText : Styles.datePickerPlaceholder}>
-                    {draftStart ? formatPickerDate(draftStart) : 'Start Date'}
-                  </Text>
-                </TouchableOpacity>
-                <View style={Styles.dateArrowContainer}>
-                  <Icon name="arrow-left-right" size="sm" color={colors.SURFACE_TEXT_MUTED} />
+              <View style={Styles.customRange}>
+                <View style={Styles.customField}>
+                  <Text style={Styles.customFieldLabel}>From</Text>
+                  <TouchableOpacity
+                    style={[Styles.searchInput, Styles.datePickerButton]}
+                    onPress={() => setShowStartPicker(true)}
+                  >
+                    <Icon name="calendar" size="sm" color={draftStart ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
+                    <Text style={[draftStart ? Styles.datePickerText : Styles.datePickerPlaceholder, { flex: 1 }]}>
+                      {draftStart ? formatPickerDate(draftStart) : 'Start date'}
+                    </Text>
+                    <Icon name="chevron-down" size="xs" color={colors.SURFACE_TEXT_MUTED} strokeWidth={2.2} />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={[Styles.searchInput, Styles.dateInput, Styles.datePickerButton]}
-                  onPress={() => setShowEndPicker(true)}
-                >
-                  <Icon name="calendar" size="sm" color={draftEnd ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
-                  <Text style={draftEnd ? Styles.datePickerText : Styles.datePickerPlaceholder}>
-                    {draftEnd ? formatPickerDate(draftEnd) : 'End Date'}
-                  </Text>
-                </TouchableOpacity>
+                <Text style={Styles.customDash}>–</Text>
+                <View style={Styles.customField}>
+                  <Text style={Styles.customFieldLabel}>To</Text>
+                  <TouchableOpacity
+                    style={[Styles.searchInput, Styles.datePickerButton]}
+                    onPress={() => setShowEndPicker(true)}
+                  >
+                    <Icon name="calendar" size="sm" color={draftEnd ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
+                    <Text style={[draftEnd ? Styles.datePickerText : Styles.datePickerPlaceholder, { flex: 1 }]}>
+                      {draftEnd ? formatPickerDate(draftEnd) : 'End date'}
+                    </Text>
+                    <Icon name="chevron-down" size="xs" color={colors.SURFACE_TEXT_MUTED} strokeWidth={2.2} />
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -450,6 +482,7 @@ const Report = () => {
 
             <View style={Styles.sheetActions}>
               <TouchableOpacity style={Styles.resetButton} activeOpacity={0.85} onPress={resetFilters}>
+                <Icon name="retake" size="sm" color={colors.SURFACE_TEXT} strokeWidth={2.2} />
                 <Text style={Styles.resetButtonText}>Reset</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -458,7 +491,8 @@ const Report = () => {
                 onPress={applyFilters}
                 disabled={!customReady}
               >
-                <Text style={Styles.applyButtonText}>Apply</Text>
+                <Icon name="sliders" size="sm" color="#FFFFFF" strokeWidth={2.2} />
+                <Text style={Styles.applyButtonText}>Apply Filters</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
