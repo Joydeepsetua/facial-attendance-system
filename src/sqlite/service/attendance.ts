@@ -271,13 +271,34 @@ export const getAttendanceRoster = async (
     if (status === "present") filters += ` AND a.punch_in IS NOT NULL`;
     else if (status === "absent") filters += ` AND a.punch_in IS NULL`;
 
-    const cte = `WITH RECURSIVE dates(d) AS (
-        SELECT ?
-        UNION ALL
-        SELECT date(d, '+1 day') FROM dates WHERE d < ?
-      )`;
+    // Build the date series in JS (so absent days still appear in the roster).
+    const days: string[] = [];
+    const cursor = new Date(`${startDate}T12:00:00`);
+    const lastDay = new Date(`${endDate}T12:00:00`);
+    let guard = 0;
+    while (cursor <= lastDay && guard < 1000) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, "0");
+      const d = String(cursor.getDate()).padStart(2, "0");
+      days.push(`${y}-${m}-${d}`);
+      cursor.setDate(cursor.getDate() + 1);
+      guard++;
+    }
 
-    const fromWhere = `FROM dates d
+    if (days.length === 0) {
+      resolve(emptyResponse);
+      return;
+    }
+
+    // The date series goes in a FROM subquery (not a leading `WITH` CTE) because
+    // react-native-sqlite-2 routes any statement not starting with SELECT to
+    // execSQL, which rejects row-returning queries ("Queries can be performed
+    // using SQLiteDatabase query or rawQuery methods only.").
+    const datesSubquery = days
+      .map((_, i) => (i === 0 ? "SELECT ? AS d" : "SELECT ?"))
+      .join(" UNION ALL ");
+
+    const fromWhere = `FROM (${datesSubquery}) d
       CROSS JOIN ${TN_USERS} u
       LEFT JOIN ${TN_ATTENDANCE} a
         ON a.user_id = u.uuid
@@ -285,8 +306,8 @@ export const getAttendanceRoster = async (
         AND substr(a.created_at, 1, 10) = d.d
       WHERE u.is_active = 1${filters}`;
 
-    const countQuery = `${cte} SELECT COUNT(*) as total ${fromWhere}`;
-    const countParams = [startDate, endDate, ...filterParams];
+    const countQuery = `SELECT COUNT(*) as total ${fromWhere}`;
+    const countParams = [...days, ...filterParams];
 
     db.transaction((tx) => {
       tx.executeSql(
@@ -297,8 +318,7 @@ export const getAttendanceRoster = async (
           const totalPages = Math.ceil(totalCount / limit);
           const offset = (page - 1) * limit;
 
-          const dataQuery = `${cte}
-            SELECT
+          const dataQuery = `SELECT
               d.d as day,
               u.uuid as user_id,
               u.name as user_name,
@@ -309,7 +329,7 @@ export const getAttendanceRoster = async (
             ${fromWhere}
             ORDER BY d.d DESC, (a.punch_in IS NULL) ASC, u.name COLLATE NOCASE ASC
             LIMIT ? OFFSET ?`;
-          const dataParams = [startDate, endDate, ...filterParams, limit, offset];
+          const dataParams = [...days, ...filterParams, limit, offset];
 
           _tx.executeSql(
             dataQuery,
