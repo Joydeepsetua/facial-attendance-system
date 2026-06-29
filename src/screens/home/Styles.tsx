@@ -181,14 +181,19 @@ const Styles = StyleSheet.create({
     width: CARD_W,
     backgroundColor: dash.CARD,
     borderRadius: 16,
-    padding: 14,
+    padding: 11,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    // Top-align so the icon/content stays at the top-left even when this card is
+    // stretched taller by a sibling card with a two-line subtitle.
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     ...cardShadow,
   },
   actionMain: {
     flex: 1,
+    alignSelf: 'stretch',
+    // Icon pinned to the top, title/subtitle pushed to the bottom of the card.
+    justifyContent: 'space-between',
   },
   actionIconWrap: {
     width: 44,
@@ -197,6 +202,12 @@ const Styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
+  },
+  actionTextGroup: {
+    marginTop: 'auto',
+  },
+  actionChevron: {
+    alignSelf: 'flex-end',
   },
   actionTitle: {
     fontSize: 14.5,

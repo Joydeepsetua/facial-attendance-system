@@ -21,7 +21,7 @@ const Styles = StyleSheet.create({
   createButton: {
     backgroundColor: colors.BRAND,
     borderRadius: 50,
-    padding: 16,
+    padding: 13,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.BRAND,

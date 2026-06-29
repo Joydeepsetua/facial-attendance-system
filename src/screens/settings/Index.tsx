@@ -18,6 +18,7 @@ interface SettingsItem {
   label: string;
   icon: AppIconName;
   route?: keyof RootStackParamList;
+  params?: object;
   danger?: boolean;
 }
 
@@ -29,6 +30,9 @@ const SETTINGS_ITEMS: SettingsItem[] = [
   // { key: 'about', label: 'About', icon: 'help' },
   { key: 'organization', label: 'Organization Update', icon: 'building', route: 'Organization' },
   { key: 'features', label: 'Feature Master', icon: 'sliders', route: 'FeatureMaster' },
+  { key: 'privacy', label: 'Privacy Policy', icon: 'lock', route: 'Legal', params: { type: 'privacy' } },
+  { key: 'terms', label: 'Terms & Conditions', icon: 'report', route: 'Legal', params: { type: 'terms' } },
+  { key: 'about', label: 'About', icon: 'help', route: 'About' },
   // { key: 'logout', label: 'Logout', icon: 'logout', danger: true },
 ];
 
@@ -37,9 +41,9 @@ const Settings = () => {
 
   const handlePress = (item: SettingsItem) => {
     if (item.route) {
-      navigation.navigate(item.route as never);
+      (navigation.navigate as any)(item.route, item.params);
     } else {
-      showToast(`${item.label} — coming soon`, 'success');78
+      showToast(`${item.label} — coming soon`, 'success');
     }
   };
 

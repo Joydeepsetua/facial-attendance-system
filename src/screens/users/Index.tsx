@@ -147,7 +147,7 @@ const Users = () => {
           style={Styles.createButton}
           onPress={() => navigation.navigate('CreateUser')}
         >
-          <Icon name="user-plus" size="xl" color={colors.PRIMARY} strokeWidth={1.5} />
+          <Icon name="user-plus" size="lg" color={colors.PRIMARY} strokeWidth={1.8} />
         </TouchableOpacity>
         <FlatList
           data={users}

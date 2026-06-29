@@ -15,6 +15,10 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facialattendance.BuildConfig;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JS bridge: launches the CameraX face-capture activity and resolves with
@@ -40,6 +44,16 @@ public class FaceCaptureModule extends ReactContextBaseJavaModule
     @NonNull
     @Override
     public String getName() { return NAME; }
+
+    /** Exposes the build's version so JS can show the real app version (no extra dependency). */
+    @Nullable
+    @Override
+    public Map<String, Object> getConstants() {
+        final Map<String, Object> constants = new HashMap<>();
+        constants.put("appVersion", BuildConfig.VERSION_NAME);
+        constants.put("buildNumber", BuildConfig.VERSION_CODE);
+        return constants;
+    }
 
     @ReactMethod
     public void capture(String mode, Promise promise) {

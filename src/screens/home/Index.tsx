@@ -366,10 +366,14 @@ const Home = () => {
                 >
                   <Icon name={action.icon} size="lg" color={action.accent} strokeWidth={2} />
                 </View>
-                <Text style={Styles.actionTitle}>{action.title}</Text>
-                <Text style={Styles.actionSubtitle}>{action.subtitle}</Text>
+                <View style={Styles.actionTextGroup}>
+                  <Text style={Styles.actionTitle}>{action.title}</Text>
+                  <Text style={Styles.actionSubtitle}>{action.subtitle}</Text>
+                </View>
               </View>
-              <Icon name="chevron-right" size="sm" color={dash.TEXT_MUTED} strokeWidth={2} />
+              <View style={Styles.actionChevron}>
+                <Icon name="chevron-right" size="sm" color={dash.TEXT_MUTED} strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           ))}
         </View>

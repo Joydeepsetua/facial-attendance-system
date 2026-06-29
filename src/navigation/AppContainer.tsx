@@ -11,6 +11,8 @@ import ComingSoon from '../screens/comingSoon/Index';
 import Settings from '../screens/settings/Index';
 import Organization from '../screens/organization/Index';
 import FeatureMaster from '../screens/featureMaster/Index';
+import Legal from '../screens/legal/Index';
+import About from '../screens/about/Index';
 
 
 export type RootStackParamList = {
@@ -24,6 +26,8 @@ export type RootStackParamList = {
     Settings: undefined;
     Organization: undefined;
     FeatureMaster: undefined;
+    Legal: { type: 'privacy' | 'terms' };
+    About: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -42,6 +46,8 @@ function AppContainer(props: any) {
             <Stack.Screen name="Settings" component={Settings} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Organization" component={Organization} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="FeatureMaster" component={FeatureMaster} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Legal" component={Legal} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="About" component={About} options={{ animation: 'slide_from_right' }} />
         </Stack.Navigator>
     )
 }

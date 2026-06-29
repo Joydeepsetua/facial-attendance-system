@@ -9,9 +9,17 @@ export interface FaceCaptureResult {
 
 interface NativeFaceCapture {
   capture(mode: string): Promise<FaceCaptureResult>;
+  // Constants exposed by the native module's getConstants().
+  appVersion?: string;
+  buildNumber?: number;
 }
 
 const native = NativeModules.FaceCaptureModule as NativeFaceCapture | undefined;
+
+/** Real app version from the native build (versionName), with a safe fallback. */
+export const APP_VERSION = native?.appVersion ?? '1.0.0';
+/** Real build number from the native build (versionCode). */
+export const BUILD_NUMBER = native?.buildNumber ?? 0;
 
 /** Native detected more than one face and refused to return an embedding. */
 export class MultipleFacesDetected extends Error {
