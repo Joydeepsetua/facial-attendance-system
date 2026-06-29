@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, View, Text, TouchableOpacity } from 'react-native';
 import Styles from './Styles';
+import { formatPunchTime as formatTime } from '../../utils/datetime';
 
 interface Props {
   visible: boolean;
@@ -12,19 +13,6 @@ interface Props {
   onClose: () => void;
   onScanNext: () => void;
 }
-
-// "YYYY-MM-DD HH:MM:SS" → "h:mm AM/PM"
-const formatTime = (dt?: string | null): string => {
-  if (!dt) return '--:--';
-  const hm = dt.substring(11, 16);
-  const [hStr, m] = hm.split(':');
-  let h = parseInt(hStr, 10);
-  if (isNaN(h) || !m) return '--:--';
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  if (h === 0) h = 12;
-  return `${h}:${m} ${ampm}`;
-};
 
 const AttendanceDoneModal = ({
   visible,

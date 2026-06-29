@@ -415,6 +415,129 @@ export const getAttendanceRoster = async (
   });
 };
 
+// Largest range we'll export. Plenty for real use; guards against an accidental
+// "all time" range producing a multi-million-row query.
+const MAX_EXPORT_DAYS = 3700; // ~10 years
+// Days per query — kept well under SQLite's SQLITE_MAX_COMPOUND_SELECT (default 500),
+// since the date series is a UNION ALL of one SELECT per day.
+const ROSTER_DAY_CHUNK = 300;
+
+// Run the roster query for a single chunk of days. Rejects on any DB error so the
+// caller can surface a real failure (unlike the on-screen roster, which resolves
+// empty to keep the list UI alive).
+const fetchRosterChunk = (
+  chunkDays: string[],
+  filters: string,
+  filterParams: any[]
+): Promise<RosterEntry[]> => {
+  return new Promise((resolve, reject) => {
+    const datesSubquery = chunkDays
+      .map((_, i) => (i === 0 ? "SELECT ? AS d" : "SELECT ?"))
+      .join(" UNION ALL ");
+
+    const query = `SELECT
+        d.d as day,
+        u.uuid as user_id,
+        u.name as user_name,
+        u.phone as user_phone,
+        u.employee_id as user_employee_id,
+        a.punch_in,
+        a.punch_out
+      FROM (${datesSubquery}) d
+      CROSS JOIN ${TN_USERS} u
+      LEFT JOIN ${TN_ATTENDANCE} a
+        ON a.user_id = u.uuid
+        AND a.is_active = 1
+        AND substr(a.created_at, 1, 10) = d.d
+      WHERE u.is_active = 1${filters}`;
+
+    db.transaction((tx) => {
+      tx.executeSql(
+        query,
+        [...chunkDays, ...filterParams],
+        (_tx, result) => {
+          const roster: RosterEntry[] = [];
+          for (let i = 0; i < result.rows.length; i++) {
+            const item = result.rows.item(i);
+            roster.push({
+              day: item.day,
+              user_id: item.user_id,
+              user_name: item.user_name,
+              user_phone: item.user_phone,
+              user_employee_id: item.user_employee_id,
+              punch_in: item.punch_in,
+              punch_out: item.punch_out,
+              status: item.punch_in ? 'present' : 'absent',
+            });
+          }
+          resolve(roster);
+        },
+        (_t, error) => {
+          reject(error);
+          return false;
+        }
+      );
+    }, (txError) => reject(txError));
+  });
+};
+
+// GET FULL ROSTER (no pagination) — same filters as getAttendanceRoster, returns
+// every matching row. Used for Excel export so the whole filtered range is included.
+// Chunks the date series so arbitrarily large ranges don't hit SQLite's compound
+// SELECT limit, and REJECTS on a real DB error (so export shows a failure, not an
+// empty file).
+export const getAttendanceRosterAll = async (
+  startDate: string,
+  endDate: string,
+  status: RosterStatus = "all",
+  searchQuery: string = ""
+): Promise<RosterEntry[]> => {
+  if (!startDate || !endDate) return [];
+
+  let filters = "";
+  const filterParams: any[] = [];
+  if (searchQuery.trim() !== "") {
+    filters += ` AND u.name LIKE ?`;
+    filterParams.push(`%${searchQuery.trim()}%`);
+  }
+  if (status === "present") filters += ` AND a.punch_in IS NOT NULL`;
+  else if (status === "absent") filters += ` AND a.punch_in IS NULL`;
+
+  // Build the full day series — no silent truncation; reject if the range is absurd.
+  const days: string[] = [];
+  const cursor = new Date(`${startDate}T12:00:00`);
+  const lastDay = new Date(`${endDate}T12:00:00`);
+  while (cursor <= lastDay) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, "0");
+    const d = String(cursor.getDate()).padStart(2, "0");
+    days.push(`${y}-${m}-${d}`);
+    cursor.setDate(cursor.getDate() + 1);
+    if (days.length > MAX_EXPORT_DAYS) {
+      throw new Error("Date range is too large to export. Please pick a shorter range.");
+    }
+  }
+  if (days.length === 0) return [];
+
+  // Fetch in chunks, then sort the combined rows the same way the on-screen roster does.
+  const all: RosterEntry[] = [];
+  for (let i = 0; i < days.length; i += ROSTER_DAY_CHUNK) {
+    const chunk = days.slice(i, i + ROSTER_DAY_CHUNK);
+    const part = await fetchRosterChunk(chunk, filters, filterParams);
+    all.push(...part);
+  }
+
+  all.sort((a, b) => {
+    if (a.day !== b.day) return a.day < b.day ? 1 : -1; // day DESC
+    const aAbsent = a.punch_in ? 0 : 1;
+    const bAbsent = b.punch_in ? 0 : 1;
+    if (aAbsent !== bAbsent) return aAbsent - bAbsent; // present first
+    return a.user_name.localeCompare(b.user_name, undefined, { sensitivity: 'base' });
+  });
+
+  return all;
+};
+
 // GET ATTENDANCE BY USER ID
 export const getAttendanceByUserId = async (userId: string): Promise<Attendance[]> => {
   return new Promise((resolve) => {

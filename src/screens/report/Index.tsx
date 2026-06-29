@@ -4,11 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Header from '../../components/header/Index';
-import { getAttendanceRoster, RosterEntry, RosterStatus } from '../../sqlite/service/attendance';
+import { getAttendanceRoster, getAttendanceRosterAll, RosterEntry, RosterStatus } from '../../sqlite/service/attendance';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import Icon from '../../components/icons/Index';
 import { AppIconName } from '../../components/icons/icons';
+import { exportAttendanceToExcel } from '../../utils/exportAttendance';
+import { formatPunchTime, formatDurationHHMM } from '../../utils/datetime';
+import { showToast } from '../../utils/toast';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
@@ -35,19 +38,8 @@ const STATUS_DOT_STYLE: Record<RosterStatus, object> = {
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-const formatTime = (dateString?: string) => {
-  if (!dateString) return '--:--';
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-};
-
-const calculateHours = (punchIn?: string, punchOut?: string) => {
-  if (!punchIn || !punchOut) return null;
-  const diffHours = (new Date(punchOut).getTime() - new Date(punchIn).getTime()) / (1000 * 60 * 60);
-  const hours = Math.floor(diffHours);
-  const minutes = Math.floor((diffHours - hours) * 60);
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-};
+const formatTime = (dateString?: string) => formatPunchTime(dateString);
+const calculateHours = (punchIn?: string, punchOut?: string) => formatDurationHHMM(punchIn, punchOut);
 
 const toDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -199,6 +191,7 @@ const Report = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   // Search
   const [searchText, setSearchText] = useState('');
@@ -265,6 +258,35 @@ const Report = () => {
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) fetchRoster(true);
+  };
+
+  // Export the FULL filtered roster (not just the loaded pages) to Excel and share.
+  const handleExport = async () => {
+    if (exporting) return;
+
+    // Cap a single export at 3 months — longer periods must be exported in parts.
+    const start = new Date(`${startDate}T12:00:00`);
+    const maxEnd = new Date(start);
+    maxEnd.setMonth(maxEnd.getMonth() + 3);
+    if (new Date(`${endDate}T12:00:00`) > maxEnd) {
+      showToast('You can export up to 3 months at a time. Please export longer periods in 3-month parts.', 'error');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const rows = await getAttendanceRosterAll(startDate, endDate, statusFilter, debouncedSearch);
+      if (rows.length === 0) {
+        showToast('No records to export', 'error');
+        return;
+      }
+      await exportAttendanceToExcel(rows, { startDate, endDate });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      showToast(`Export failed: ${error?.message || error}`, 'error');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const openSheet = () => {
@@ -343,6 +365,18 @@ const Report = () => {
             >
               <Icon name="sliders" size="sm" color={filtersActive ? colors.BRAND : colors.SURFACE_TEXT_MUTED} />
               {filtersActive && <View style={Styles.filterDot} />}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={Styles.filterButton}
+              onPress={handleExport}
+              activeOpacity={0.85}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <ActivityIndicator size="small" color={colors.BRAND} />
+              ) : (
+                <Icon name="download" size="sm" color={colors.SURFACE_TEXT_MUTED} />
+              )}
             </TouchableOpacity>
           </View>
         </View>

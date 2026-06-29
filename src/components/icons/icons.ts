@@ -38,6 +38,7 @@ import {
   SlidersHorizontal,
   Phone,
   ChevronDown,
+  Download,
 } from 'lucide-react-native';
 
 export const ICON_MAP = {
@@ -80,6 +81,7 @@ export const ICON_MAP = {
   sliders: SlidersHorizontal,
   phone: Phone,
   "chevron-down": ChevronDown,
+  download: Download,
 } as const;
 
 export type AppIconName = keyof typeof ICON_MAP;
