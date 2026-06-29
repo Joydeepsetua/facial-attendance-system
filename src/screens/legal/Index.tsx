@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, ScrollView, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Header from '../../components/header/Index';
 import colors from '../../constants/colors';
@@ -28,53 +29,58 @@ const PRIVACY: Doc = {
   title: 'Privacy Policy',
   updated: LAST_UPDATED,
   intro:
-    `${APP_NAME} is a facial attendance application. This policy explains what data the app ` +
-    `collects, how it is used, and how it is stored. By using the app you agree to this policy.`,
+    `${APP_NAME} is a facial attendance app that works entirely on your device. This policy ` +
+    `explains, in simple terms, what data the app uses and how it is kept. By using the app you ` +
+    `agree to this policy.`,
   sections: [
     {
-      heading: '1. Data We Collect',
+      heading: '1. What we collect',
       body:
-        'To mark attendance the app captures a photo of the user\'s face and derives a numeric ' +
-        'face signature (embedding) from it. We also store basic employee details you enter, such ' +
-        'as name, phone number, employee ID, and optional payroll/bank fields.',
+        'To register an employee, the app captures a face photo and turns it into a numeric face ' +
+        'signature. It also stores the employee details you enter, such as name, phone number, ' +
+        'employee ID, and optional payroll/bank details.',
     },
     {
-      heading: '2. How Data Is Stored',
+      heading: '2. How it is stored',
       body:
-        'All data — including face signatures and employee records — is stored locally on this ' +
-        'device in the app\'s private database. Captured face images are processed on-device and ' +
-        'are not uploaded to any external server by the app.',
+        'All data — face signatures, employee details and attendance — is stored only on this ' +
+        'device and nowhere else. We do not keep any copy of your data on a server or cloud, and ' +
+        'nothing is uploaded or shared over the internet by the app.',
     },
     {
-      heading: '3. How We Use Your Data',
+      heading: '3. No backup — data loss',
       body:
-        'Face signatures are used solely to recognize a registered user and record their punch-in ' +
-        'and punch-out times. Employee details are used to identify staff and, where enabled, to ' +
-        'support payroll reporting.',
+        'Because the data lives only on this device, it cannot be recovered by us. If you delete ' +
+        'the data, uninstall the app, clear the app data, reset or format the phone, or the device ' +
+        'is lost or damaged, all attendance and employee data will be permanently lost. Please ' +
+        'keep your own backup/export if you need to retain records.',
     },
     {
-      heading: '4. Data Sharing',
+      heading: '4. How it is used',
       body:
-        'The app does not sell or share your personal data with third parties. Data leaves the ' +
-        'device only if you or your organization explicitly export or back it up.',
+        'The face signature is used only to recognise a registered employee and record their ' +
+        'punch-in and punch-out. Employee details are used to identify staff and, if enabled, for ' +
+        'payroll.',
     },
     {
-      heading: '5. Data Retention & Deletion',
+      heading: '5. Consent',
       body:
-        'Records remain until an administrator deletes them. Removing a user from the app deletes ' +
-        'that user\'s details and face signature from the device.',
+        'Every employee should be told and should agree before their face is registered. The ' +
+        'organization using the app is responsible for taking this consent.',
     },
     {
-      heading: '6. Consent',
+      heading: '6. Deletion & your choices',
       body:
-        'Each employee should be informed and should consent before their face is registered for ' +
-        'attendance. The organization operating this app is responsible for obtaining that consent.',
+        'Deleting an employee removes their details and face signature from the device. ' +
+        'Uninstalling the app removes the locally stored data. You may ask the administrator to ' +
+        'view, correct or delete your data at any time.',
     },
     {
       heading: '7. Contact',
       body:
-        'For any questions about this policy or your data, please contact your organization\'s ' +
-        'administrator.',
+        'For any question about your data or this policy, please contact your organization\'s ' +
+        'administrator. This policy is governed by the laws of India and may be updated from time ' +
+        'to time.',
     },
   ],
 };
@@ -83,45 +89,43 @@ const TERMS: Doc = {
   title: 'Terms & Conditions',
   updated: LAST_UPDATED,
   intro:
-    `Please read these Terms & Conditions carefully before using ${APP_NAME}. By using the app ` +
-    `you agree to be bound by these terms.`,
+    `Please read these Terms before using ${APP_NAME}. By using the app you agree to them.`,
   sections: [
     {
-      heading: '1. Use of the App',
+      heading: '1. Use of the app',
       body:
-        `${APP_NAME} is provided for managing employee attendance using facial recognition. You ` +
-        'agree to use it only for lawful attendance and workforce-management purposes.',
+        `${APP_NAME} is for managing employee attendance using face recognition. Use it only for ` +
+        'lawful attendance and workforce-management purposes.',
     },
     {
-      heading: '2. Accounts & Data Accuracy',
+      heading: '2. Your responsibilities',
       body:
-        'You are responsible for the accuracy of the employee information entered into the app and ' +
-        'for keeping device access secure.',
+        'You must take each employee\'s consent before registering their face, keep the employee ' +
+        'information accurate, and keep the device and app access secure.',
     },
     {
-      heading: '3. Acceptable Use',
+      heading: '3. Acceptable use',
       body:
-        'You must not use the app to register a person without their knowledge, to impersonate ' +
-        'another individual, or to tamper with attendance records.',
+        'Do not register or scan anyone without their consent, impersonate another person, or ' +
+        'tamper with attendance records.',
     },
     {
-      heading: '4. Accuracy of Recognition',
+      heading: '4. Accuracy',
       body:
-        'Facial recognition may not be 100% accurate and can be affected by lighting, camera ' +
-        'quality, and appearance changes. Attendance records should be reviewed where accuracy is ' +
-        'critical.',
+        'Face recognition may not be 100% accurate and can be affected by lighting, camera quality ' +
+        'and appearance changes. Please review records where accuracy is important.',
     },
     {
-      heading: '5. Limitation of Liability',
+      heading: '5. Liability',
       body:
-        'The app is provided "as is" without warranties of any kind. The developers are not liable ' +
-        'for any loss arising from use of the app, including incorrect attendance records.',
+        'The app is provided "as is" without any warranty. We are not liable for any loss arising ' +
+        'from use of the app, including incorrect attendance records.',
     },
     {
-      heading: '6. Changes to These Terms',
+      heading: '6. Changes & law',
       body:
-        'These terms may be updated from time to time. Continued use of the app after changes ' +
-        'constitutes acceptance of the updated terms.',
+        'These Terms may be updated from time to time; continued use means you accept the changes. ' +
+        'These Terms are governed by the laws of India.',
     },
   ],
 };
@@ -129,10 +133,30 @@ const TERMS: Doc = {
 const Legal = () => {
   const route = useRoute<LegalRoute>();
   const doc = route.params?.type === 'terms' ? TERMS : PRIVACY;
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   return (
-    <SafeAreaView style={Styles.screen} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={Styles.screen}
+      edges={['top', 'bottom']}
+      onLayout={(e) =>
+        setSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+      }
+    >
       <StatusBar backgroundColor={colors.SURFACE_BG} barStyle="dark-content" />
+      {/* Faint top-down gradient so the page isn't flat white */}
+      {size.width > 0 && (
+        <Svg style={StyleSheet.absoluteFill} width={size.width} height={size.height}>
+          <Defs>
+            <SvgLinearGradient id="legalBg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={size.height}>
+              <Stop offset="0" stopColor="#F4F6FB" />
+              <Stop offset="0.45" stopColor="#EAF1FF" />
+              <Stop offset="1" stopColor="#CFE0FF" />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={size.width} height={size.height} fill="url(#legalBg)" />
+        </Svg>
+      )}
       <Header title={doc.title} showBack />
       <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={Styles.updated}>Last updated: {doc.updated}</Text>

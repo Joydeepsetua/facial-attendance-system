@@ -49,8 +49,8 @@ const FeatureMaster = () => {
         <Text style={Styles.sectionLabel}>MODULES</Text>
         <View style={Styles.card}>
           <View style={Styles.row}>
-            <View style={[Styles.rowIconChip, { backgroundColor: `${colors.ACCENT_AMBER}18` }]}>
-              <Icon name="wallet" size="sm" color={colors.ACCENT_AMBER} strokeWidth={2} />
+            <View style={[Styles.rowIconChip, { backgroundColor: `${colors.BRAND}18` }]}>
+              <Icon name="wallet" size="sm" color={colors.BRAND} strokeWidth={2} />
             </View>
             <View style={Styles.rowText}>
               <Text style={Styles.rowTitle}>Enable Payroll</Text>

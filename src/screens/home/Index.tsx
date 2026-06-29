@@ -344,10 +344,6 @@ const Home = () => {
         {/* Quick actions */}
         <View style={Styles.sectionRow}>
           <Text style={Styles.sectionTitle}>Quick Actions</Text>
-          <View style={Styles.viewAll}>
-            <Text style={Styles.viewAllText}>View All</Text>
-            <Icon name="chevron-right" size="xs" color={dash.BLUE} strokeWidth={2.5} />
-          </View>
         </View>
         <View style={Styles.grid}>
           {actions.map((action) => (
