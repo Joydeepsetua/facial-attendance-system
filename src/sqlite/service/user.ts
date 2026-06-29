@@ -118,6 +118,43 @@ export const getNextEmployeeId = async (): Promise<string> => {
   });
 };
 
+// PHONE UNIQUENESS — true if another active user already has this phone number.
+// Pass excludeUuid when editing so the user's own record isn't counted.
+export const isPhoneTaken = async (
+  phone: string,
+  excludeUuid?: string
+): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    const trimmed = phone.trim();
+    if (!trimmed) {
+      resolve(false);
+      return;
+    }
+    let query = `SELECT COUNT(*) AS count FROM ${TN_USERS} WHERE phone = ? AND is_active = 1`;
+    const params: any[] = [trimmed];
+    if (excludeUuid) {
+      query += ` AND uuid != ?`;
+      params.push(excludeUuid);
+    }
+    db.transaction((tx) => {
+      tx.executeSql(
+        query,
+        params,
+        (_tx, result) => resolve((result.rows.item(0)?.count || 0) > 0),
+        (_t, error) => {
+          console.log('isPhoneTaken error:', error);
+          // Fail closed: a read error must not let a duplicate phone slip through.
+          reject(error);
+          return false;
+        }
+      );
+    }, (txError) => {
+      console.log('isPhoneTaken tx error:', txError);
+      reject(txError);
+    });
+  });
+};
+
 // CREATE USER
 export const createUser = async (input: UserInput, embedding: number[]): Promise<boolean> => {
   if (!input?.name || !embedding || !input.phone || !input.gender) {

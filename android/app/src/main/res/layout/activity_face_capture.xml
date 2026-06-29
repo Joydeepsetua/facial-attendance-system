@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Close -->
+    <ImageButton
+        android:id="@+id/btnCancel"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginStart="20dp"
+        android:padding="11dp"
+        android:background="@drawable/bg_circle_translucent"
+        android:backgroundTint="@null"
+        android:src="@drawable/ic_close"
+        android:scaleType="fitCenter"
+        android:contentDescription="Cancel"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Switch camera -->
+    <ImageButton
+        android:id="@+id/btnFlip"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="20dp"
+        android:padding="10dp"
+        android:background="@drawable/bg_circle_translucent"
+        android:backgroundTint="@null"
+        android:src="@drawable/ic_switch_camera"
+        android:scaleType="fitCenter"
+        android:contentDescription="Switch camera"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Hint -->
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:layout_marginHorizontal="32dp"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="11dp"
+        android:gravity="center"
+        android:text="Position your face inside the frame"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="@drawable/bg_pill_translucent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminateTint="#FFFFFF"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Status (Capturing… / Generating embedding…) -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="28dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="9dp"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:background="@drawable/bg_pill_translucent"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnCapture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Shutter / capture -->
+    <Button
+        android:id="@+id/btnCapture"
+        android:layout_width="78dp"
+        android:layout_height="78dp"
+        android:layout_marginBottom="52dp"
+        android:background="@drawable/bg_shutter"
+        android:backgroundTint="@null"
+        android:text=""
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,14 +1,21 @@
-import { NativeModules } from 'react-native';
-import { openCamera } from './camera';
+import { captureFace, MultipleFacesDetected } from './faceCapture';
 import { getAllUsers } from '../sqlite/service/user';
 import { findBestMatch } from './face';
-import { createAttendance, getTodayAttendanceAction } from '../sqlite/service/attendance';
+import { createAttendance, getTodayAttendance } from '../sqlite/service/attendance';
 
 export type PunchAction = 'in' | 'out';
 
 export type ScanOutcome =
   | { type: 'cancelled' }
   | { type: 'pending'; uuid: string; name: string; similarity: number; action: PunchAction }
+  | {
+      type: 'completed';
+      name: string;
+      employeeId: string | null;
+      similarity: number;
+      punchIn: string | null;
+      punchOut: string | null;
+    }
   | { type: 'error'; message: string };
 
 /**
@@ -19,13 +26,12 @@ export type ScanOutcome =
  */
 export const scanFaceForAttendance = async (): Promise<ScanOutcome> => {
   try {
-    const base64Image = await openCamera();
-    if (!base64Image) {
+    // Native CameraX screen: live preview + auto-capture, returns the embedding directly.
+    const capture = await captureFace('recognize');
+    if (!capture) {
       return { type: 'cancelled' };
     }
-
-    const embeddingStr = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
-    const capturedEmbedding = embeddingStr.split(',').map(Number);
+    const capturedEmbedding = capture.embedding;
 
     const users = await getAllUsers();
     if (users.length === 0) {
@@ -37,9 +43,19 @@ export const scanFaceForAttendance = async (): Promise<ScanOutcome> => {
       return { type: 'error', message: 'No matching user found' };
     }
 
-    const action = await getTodayAttendanceAction(match.uuid);
-    if (action === 'completed') {
-      return { type: 'error', message: 'Attendance for today already completed!' };
+    // Throws on a DB read error (vs. resolving null for "no record today"), so we never
+    // mislabel the punch — a read failure surfaces as an error instead of a wrong action.
+    const today = await getTodayAttendance(match.uuid);
+    if (today && today.punchOut) {
+      // Both punch-in and punch-out done for today — nothing left to record.
+      return {
+        type: 'completed',
+        name: match.name,
+        employeeId: match.employeeId ?? null,
+        similarity: match.similarity,
+        punchIn: today.punchIn,
+        punchOut: today.punchOut,
+      };
     }
 
     return {
@@ -47,14 +63,13 @@ export const scanFaceForAttendance = async (): Promise<ScanOutcome> => {
       uuid: match.uuid,
       name: match.name,
       similarity: match.similarity,
-      action,
+      action: today ? 'out' : 'in',
     };
   } catch (error: any) {
-    console.error('Error scanning face:', error);
-    const errorMessage = error?.message || error?.toString() || '';
-    if (errorMessage.includes('No face detected')) {
-      return { type: 'error', message: 'No face detected' };
+    if (error instanceof MultipleFacesDetected) {
+      return { type: 'error', message: 'Multiple faces detected. Only one person at a time.' };
     }
+    console.error('Error scanning face:', error);
     return { type: 'error', message: 'Failed to scan face' };
   }
 };

@@ -22,6 +22,7 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 export interface FaceMatch {
   uuid: string;
   name: string;
+  employeeId?: string | null;
   similarity: number;
 }
 
@@ -39,7 +40,7 @@ export const findBestMatch = (
       const userEmbedding = JSON.parse(user.embedding) as number[];
       const sim = cosineSimilarity(embedding, userEmbedding);
       if (sim >= threshold && (!best || sim > best.similarity)) {
-        best = { uuid: user.uuid, name: user.name, similarity: sim };
+        best = { uuid: user.uuid, name: user.name, employeeId: user.employee_id ?? null, similarity: sim };
       }
     } catch (error) {
       console.error('Error parsing user embedding:', error);
@@ -63,7 +64,7 @@ export const findMatchingUsers = (
       const userEmbedding = JSON.parse(user.embedding) as number[];
       const sim = cosineSimilarity(embedding, userEmbedding);
       if (sim >= threshold) {
-        matches.push({ uuid: user.uuid, name: user.name, similarity: sim });
+        matches.push({ uuid: user.uuid, name: user.name, employeeId: user.employee_id ?? null, similarity: sim });
       }
     } catch (error) {
       console.error('Error parsing user embedding:', error);

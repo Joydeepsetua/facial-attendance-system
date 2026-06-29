@@ -44,7 +44,12 @@ const DuplicateFaceModal = ({
             >
               {matches.map(m => (
                 <View key={m.uuid} style={Styles.row}>
-                  <Text style={Styles.rowName}>{m.name}</Text>
+                  <View style={Styles.rowInfo}>
+                    <Text style={Styles.rowName} numberOfLines={1}>{m.name}</Text>
+                    {m.employeeId ? (
+                      <Text style={Styles.rowId}>ID {m.employeeId}</Text>
+                    ) : null}
+                  </View>
                   <Text style={Styles.rowSim}>{(m.similarity * 100).toFixed(1)}%</Text>
                 </View>
               ))}

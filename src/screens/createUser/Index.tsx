@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   StatusBar,
-  NativeModules,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,8 +18,8 @@ import DuplicateFaceModal from '../../components/duplicateFaceModal/Index';
 import Icon from '../../components/icons/Index';
 import Styles from './Styles';
 import colors from '../../constants/colors';
-import { openCamera } from '../../utils/camera';
-import { createUser, getNextEmployeeId, UserInput, SalaryType } from '../../sqlite/service/user';
+import { captureFace, MultipleFacesDetected } from '../../utils/faceCapture';
+import { createUser, getNextEmployeeId, isPhoneTaken, UserInput, SalaryType } from '../../sqlite/service/user';
 import { showToast } from '../../utils/toast';
 import { findDuplicateUsers, FaceMatch } from '../../utils/face';
 import { validateEmail, validateIfsc, validatePan, validateUan } from '../../utils/validation';
@@ -83,7 +82,8 @@ const CreateUser = () => {
   const [esi, setEsi] = useState('');
   const [uan, setUan] = useState('');
 
-  const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [capturedEmbedding, setCapturedEmbedding] = useState<number[] | null>(null);
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<FaceMatch[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -103,7 +103,7 @@ const CreateUser = () => {
     if (!phone.trim()) e.phone = 'Phone number is required';
     else if (!/^[0-9]{10}$/.test(phone.trim())) e.phone = 'Enter a valid 10 digit phone number';
     if (!gender) e.gender = 'Please select gender';
-    if (!base64Image) e.photo = 'Profile photo is required';
+    if (!capturedEmbedding) e.photo = 'Profile photo is required';
     e.email = validateEmail(email);
     e.ifsc = validateIfsc(ifsc);
     e.pan = validatePan(pan);
@@ -130,10 +130,19 @@ const CreateUser = () => {
   });
 
   const handleImagePicker = async () => {
-    const image = await openCamera();
-    if (!image) return;
-    setBase64Image(image);
-    clearError('photo');
+    try {
+      const result = await captureFace('register');
+      if (!result) return;
+      setPhotoUri(result.imagePath);
+      setCapturedEmbedding(result.embedding);
+      clearError('photo');
+    } catch (error) {
+      if (error instanceof MultipleFacesDetected) {
+        showToast('Multiple faces detected. Only one face in the frame.', 'error');
+      } else {
+        showToast('Failed to capture face', 'error');
+      }
+    }
   };
 
   const saveUser = async (embeddingArray: number[]) => {
@@ -153,8 +162,13 @@ const CreateUser = () => {
     setSaving(true);
 
     try {
-      const embedding = await NativeModules.FaceEmbedding.getEmbedding(base64Image);
-      const embeddingArray = embedding.split(',').map(Number);
+      if (await isPhoneTaken(phone.trim())) {
+        setErrors((prev) => ({ ...prev, phone: 'This phone number is already registered' }));
+        setSaving(false);
+        return;
+      }
+
+      const embeddingArray = capturedEmbedding!;
 
       const duplicates = await findDuplicateUsers(embeddingArray);
       if (duplicates.length > 0) {
@@ -167,12 +181,7 @@ const CreateUser = () => {
       await saveUser(embeddingArray);
     } catch (error: any) {
       console.error('Error creating user:', error);
-      const errorMessage = error?.message || error?.toString() || '';
-      if (errorMessage.includes('No face detected')) {
-        showToast('Error: No face detected', 'error');
-      } else {
-        showToast('Failed to create user', 'error');
-      }
+      showToast('Failed to create user', 'error');
       setSaving(false);
     }
   };
@@ -200,8 +209,8 @@ const CreateUser = () => {
         {/* Profile header */}
         <View style={Styles.profileHeader}>
           <TouchableOpacity style={Styles.avatarWrap} activeOpacity={0.85} onPress={handleImagePicker}>
-            {base64Image ? (
-              <Image source={{ uri: `data:image/jpeg;base64,${base64Image}` }} style={Styles.avatarImage} />
+            {photoUri ? (
+              <Image source={{ uri: `file://${photoUri}` }} style={Styles.avatarImage} />
             ) : (
               <View style={Styles.avatarPlaceholder}>
                 <Icon name="camera" size="xl" color={colors.BRAND} strokeWidth={1.8} />

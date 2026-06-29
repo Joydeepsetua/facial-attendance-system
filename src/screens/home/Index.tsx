@@ -36,6 +36,7 @@ import { isFeatureEnabled } from '../../sqlite/service/settings';
 import { SETTING_KEYS } from '../../sqlite/model/settings';
 import Icon from '../../components/icons/Index';
 import { AppIconName } from '../../components/icons/icons';
+import AttendanceDoneModal from '../../components/attendanceDoneModal/Index';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -101,6 +102,15 @@ const Home = () => {
   const [pending, setPending] = useState<
     { uuid: string; name: string; similarity: number; action: PunchAction } | null
   >(null);
+  const [completed, setCompleted] = useState<
+    {
+      name: string;
+      employeeId: string | null;
+      similarity: number;
+      punchIn: string | null;
+      punchOut: string | null;
+    } | null
+  >(null);
   const [bannerSize, setBannerSize] = useState({ width: 0, height: 0 });
   const absent = Math.max(stats.users - stats.today, 0);
 
@@ -147,6 +157,11 @@ const Home = () => {
       showToast(outcome.message, 'error');
       return;
     }
+    if (outcome.type === 'completed') {
+      // This user already punched in AND out today — show details, don't record.
+      setCompleted(outcome);
+      return;
+    }
     setPending(outcome);
   }, [scanning]);
 
@@ -159,14 +174,26 @@ const Home = () => {
     setCommitting(false);
     setPending(null);
     showToast(res.message, res.success ? 'success' : 'error');
-    if (res.success) loadStats();
-    handleMarkAttendance();
+    // Only continue the kiosk loop (reopen the camera) on success. On failure stay on
+    // the dashboard so we don't spin into an error-toast → reopen → error loop.
+    if (res.success) {
+      loadStats();
+      handleMarkAttendance();
+    }
   }, [pending, loadStats, handleMarkAttendance]);
 
   // "Cancel" — discard this match and return to the dashboard.
   const handleCancelConfirm = useCallback(() => {
     setPending(null);
   }, []);
+
+  // "Already completed" modal actions.
+  const handleCompletedScanNext = useCallback(() => {
+    setCompleted(null);
+    handleMarkAttendance();
+  }, [handleMarkAttendance]);
+
+  const handleCompletedDone = useCallback(() => setCompleted(null), []);
 
   // Distinct visual identity per action so the operator reads it at a glance.
   const isOut = pending?.action === 'out';
@@ -369,8 +396,6 @@ const Home = () => {
       >
         <View style={Styles.modalOverlay}>
           <View style={Styles.resultCard}>
-            <View style={[Styles.actionAccent, { backgroundColor: actionColor }]} />
-
             <View style={[Styles.resultIcon, { backgroundColor: `${actionColor}18` }]}>
               <Icon name={actionIcon} size="xl" color={actionColor} strokeWidth={2} />
             </View>
@@ -418,6 +443,18 @@ const Home = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Already-completed: this user has both punched in and out today */}
+      <AttendanceDoneModal
+        visible={completed !== null}
+        name={completed?.name}
+        employeeId={completed?.employeeId}
+        similarity={completed?.similarity}
+        punchIn={completed?.punchIn}
+        punchOut={completed?.punchOut}
+        onClose={handleCompletedDone}
+        onScanNext={handleCompletedScanNext}
+      />
     </SafeAreaView>
   );
 };

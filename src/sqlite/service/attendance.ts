@@ -111,32 +111,43 @@ export const createAttendance = async (userId: string): Promise<{ success: boole
   });
 };
 
-// PEEK TODAY'S NEXT ACTION — what createAttendance WOULD do for this user today,
-// without recording anything. Used to confirm with the operator before punching.
-export type TodayAttendanceAction = "in" | "out" | "completed";
+// PEEK TODAY'S ATTENDANCE for a user — returns the current record (if any) so the
+// caller can decide the next action (in/out/completed) and show punch times,
+// without recording anything.
+export interface TodayAttendance {
+  punchIn: string | null;
+  punchOut: string | null;
+}
 
-export const getTodayAttendanceAction = async (
+export const getTodayAttendance = async (
   userId: string
-): Promise<TodayAttendanceAction> => {
-  return new Promise((resolve) => {
+): Promise<TodayAttendance | null> => {
+  return new Promise((resolve, reject) => {
     const currentDateTime = formatDateForSQLite(new Date());
-    const query = `SELECT punch_out FROM ${TN_ATTENDANCE} WHERE user_id = ? AND substr(created_at, 1, 10) = substr(?, 1, 10) AND is_active = 1`;
+    const query = `SELECT punch_in, punch_out FROM ${TN_ATTENDANCE} WHERE user_id = ? AND substr(created_at, 1, 10) = substr(?, 1, 10) AND is_active = 1`;
     db.transaction((tx) => {
       tx.executeSql(
         query,
         [userId, currentDateTime],
         (_tx, result) => {
-          if (result.rows.length === 0) resolve("in");
-          else if (!result.rows.item(0).punch_out) resolve("out");
-          else resolve("completed");
+          if (result.rows.length === 0) {
+            // No record today — distinct from a read failure (which rejects below),
+            // so the caller never mislabels the punch action.
+            resolve(null);
+          } else {
+            const row = result.rows.item(0);
+            resolve({ punchIn: row.punch_in ?? null, punchOut: row.punch_out ?? null });
+          }
         },
         (_t, error) => {
-          console.log("getTodayAttendanceAction error: ", error);
-          // Fall back to "in" — createAttendance re-checks before committing anyway.
-          resolve("in");
+          console.log("getTodayAttendance error: ", error);
+          reject(error);
           return false;
         }
       );
+    }, (txError) => {
+      console.log("getTodayAttendance tx error: ", txError);
+      reject(txError);
     });
   });
 };

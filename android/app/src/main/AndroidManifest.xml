@@ -25,5 +25,13 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- Native face-capture screen (CameraX + ML Kit + TFLite). Launched by FaceCaptureModule. -->
+      <activity
+        android:name=".facecapture.FaceCaptureActivity"
+        android:exported="false"
+        android:screenOrientation="portrait"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:theme="@style/Theme.AppCompat.NoActionBar" />
     </application>
 </manifest>
