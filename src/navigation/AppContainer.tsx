@@ -7,12 +7,13 @@ import CreateUser from '../screens/createUser/Index';
 import Report from '../screens/report/Index';
 import Users from '../screens/users/Index';
 import EditUser from '../screens/editUser/Index';
-import ComingSoon from '../screens/comingSoon/Index';
 import Settings from '../screens/settings/Index';
 import Organization from '../screens/organization/Index';
 import FeatureMaster from '../screens/featureMaster/Index';
 import Legal from '../screens/legal/Index';
 import About from '../screens/about/Index';
+import Payroll from '../screens/payroll/Index';
+import Payslip from '../screens/payslip/Index';
 
 
 export type RootStackParamList = {
@@ -28,6 +29,15 @@ export type RootStackParamList = {
     FeatureMaster: undefined;
     Legal: { type: 'privacy' | 'terms' };
     About: undefined;
+    Payslip: {
+        uuid: string;
+        year: number;
+        month: number; // 0-based
+        presentDays: number;
+        pay: number;
+        salaryType: string;
+        salaryAmount: number;
+    };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -42,7 +52,8 @@ function AppContainer(props: any) {
             <Stack.Screen name="Report" component={Report} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Users" component={Users} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="EditUser" component={EditUser} options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="Payroll" component={ComingSoon} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Payroll" component={Payroll} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Payslip" component={Payslip} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Settings" component={Settings} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Organization" component={Organization} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="FeatureMaster" component={FeatureMaster} options={{ animation: 'slide_from_right' }} />

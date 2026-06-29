@@ -1,12 +1,6 @@
-import { NativeModules } from 'react-native';
-import * as XLSX from 'xlsx';
-import Share from 'react-native-share';
 import { RosterEntry } from '../sqlite/service/attendance';
 import { formatPunchTime, formatDurationHm } from './datetime';
-
-const FileExport = NativeModules.FileExport as
-  | { writeBase64ToCache(base64: string, filename: string): Promise<string> }
-  | undefined;
+import { shareRowsAsExcel } from './excel';
 
 /**
  * Build an .xlsx from the roster rows and open the system share sheet so the user
@@ -29,36 +23,14 @@ export const exportAttendanceToExcel = async (
     'Total Hours': formatDurationHm(r.punch_in, r.punch_out),
   }));
 
-  const ws = XLSX.utils.json_to_sheet(sheetData);
-  ws['!cols'] = [
-    { wch: 12 }, { wch: 12 }, { wch: 22 }, { wch: 14 },
-    { wch: 10 }, { wch: 11 }, { wch: 11 }, { wch: 12 },
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-
-  const base64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-
   const range = meta.startDate === meta.endDate ? meta.startDate : `${meta.startDate}_to_${meta.endDate}`;
-  const fileName = `attendance_${range}.xlsx`;
-  const mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-  if (!FileExport) {
-    throw new Error('FileExport native module not linked — rebuild the app.');
-  }
-
-  // Write to a real file and share its file:// path. Sharing a data: URI directly
-  // crashes react-native-share with a Uri.getScheme() NPE on some devices.
-  const path = await FileExport.writeBase64ToCache(base64, fileName);
-
-  await Share.open({
+  await shareRowsAsExcel(sheetData, `attendance_${range}.xlsx`, {
+    sheetName: 'Attendance',
+    colWidths: [12, 12, 22, 14, 10, 11, 11, 12],
     title: 'Attendance Report',
     subject: `Attendance Report (${range})`,
-    failOnCancel: false,
-    filename: fileName,
-    url: `file://${path}`,
-    type: mime,
+    boldHeader: true,
   });
 
   return true;
