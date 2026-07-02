@@ -42,8 +42,8 @@ const Styles = StyleSheet.create({
     borderColor: `${colors.BRAND}22`,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
   },
   appName: {
     fontSize: 24,

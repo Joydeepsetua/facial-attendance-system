@@ -15,6 +15,11 @@ const Styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: -20,
+  },
   appName: {
     fontSize: 40,
     fontWeight: '800',

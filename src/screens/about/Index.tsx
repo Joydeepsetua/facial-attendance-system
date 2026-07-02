@@ -108,7 +108,7 @@ const About = () => {
 
           <View style={Styles.logoBadge}>
             <Image
-              source={require('../../assets/images/FaceTenLogo/dark_without_bg.png')}
+              source={require('../../assets/images/logos/blue.png')}
               style={Styles.logo}
               resizeMode="contain"
             />

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, ImageBackground, StatusBar, View } from 'react-native';
+import { Animated, Easing, Image, ImageBackground, StatusBar, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppContainer';
@@ -13,6 +13,8 @@ const SplashScreen = () => {
 
   // Animated values
   const bgOpacity = useRef(new Animated.Value(0)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.85)).current;
   const nameOpacity = useRef(new Animated.Value(0)).current;
   const nameTranslate = useRef(new Animated.Value(18)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
@@ -34,6 +36,20 @@ const SplashScreen = () => {
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
+      Animated.parallel([
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 450,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 450,
+          easing: Easing.out(Easing.back(1.4)),
+          useNativeDriver: true,
+        }),
+      ]),
       Animated.parallel([
         Animated.timing(nameOpacity, {
           toValue: 1,
@@ -73,6 +89,17 @@ const SplashScreen = () => {
         resizeMode="cover"
       >
         <View style={Styles.center}>
+          {/* Logo */}
+          <Animated.View
+            style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}
+          >
+            <Image
+              source={require('../../assets/images/logos/blue.png')}
+              style={Styles.logo}
+              resizeMode="contain"
+            />
+          </Animated.View>
+
           {/* App name */}
           <Animated.Text
             style={[
