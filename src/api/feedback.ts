@@ -40,6 +40,15 @@ export class FeedbackApiNotConfigured extends Error {
 const url = (path: string) => `${FEEDBACK_API_BASE_URL.replace(/\/+$/, '')}${path}`;
 const imageUploadUrl = (path: string) => `${FEEDBACK_IMAGE_UPLOAD_BASE_URL.replace(/\/+$/, '')}${path}`;
 
+export const warmUpFeedbackServers = (): void => {
+  if (isFeedbackApiConfigured()) {
+    fetch(FEEDBACK_API_BASE_URL.replace(/\/+$/, ''), { method: 'GET' }).catch(() => {});
+  }
+  if (isFeedbackImageUploadConfigured()) {
+    fetch(FEEDBACK_IMAGE_UPLOAD_BASE_URL.replace(/\/+$/, ''), { method: 'GET' }).catch(() => {});
+  }
+};
+
 
 
 /**

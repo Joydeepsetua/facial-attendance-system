@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { isFeedbackApiConfigured } from '../../constants/config';
 import {
   submitFeedback,
   uploadFeedbackImage,
+  warmUpFeedbackServers,
   FeedbackApiNotConfigured,
   FeedbackType,
   FeedbackPayload,
@@ -142,6 +143,12 @@ const Feedback = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Wake the (possibly sleeping) feedback + image upload servers as soon as the
+  // form opens, so submit/upload are fast instead of waiting on a cold start.
+  useEffect(() => {
+    warmUpFeedbackServers();
+  }, []);
 
   const clearError = (key: keyof FormErrors) =>
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
