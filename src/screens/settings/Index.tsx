@@ -32,6 +32,7 @@ const SETTINGS_ITEMS: SettingsItem[] = [
   { key: 'features', label: 'Feature Master', icon: 'sliders', route: 'FeatureMaster' },
   { key: 'privacy', label: 'Privacy Policy', icon: 'lock', route: 'Legal', params: { type: 'privacy' } },
   { key: 'terms', label: 'Terms & Conditions', icon: 'report', route: 'Legal', params: { type: 'terms' } },
+  { key: 'feedback', label: 'Send Feedback', icon: 'feedback', route: 'Feedback' },
   { key: 'about', label: 'About', icon: 'help', route: 'About' },
   // { key: 'logout', label: 'Logout', icon: 'logout', danger: true },
 ];

@@ -256,6 +256,14 @@ const Home = () => {
       accent: colors.ACCENT_SLATE,
       onPress: () => navigation.navigate('Settings'),
     },
+    {
+      key: 'feedback',
+      title: 'Send Feedback',
+      subtitle: 'Report a bug or idea',
+      icon: 'feedback',
+      accent: colors.ACCENT_VIOLET,
+      onPress: () => navigation.navigate('Feedback'),
+    },
   ] as Action[]).filter((action) => action.key !== 'payroll' || payrollEnabled);
 
   return (

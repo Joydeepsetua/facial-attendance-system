@@ -14,6 +14,7 @@ import Legal from '../screens/legal/Index';
 import About from '../screens/about/Index';
 import Payroll from '../screens/payroll/Index';
 import Payslip from '../screens/payslip/Index';
+import Feedback from '../screens/feedback/Index';
 
 
 export type RootStackParamList = {
@@ -29,6 +30,7 @@ export type RootStackParamList = {
     FeatureMaster: undefined;
     Legal: { type: 'privacy' | 'terms' };
     About: undefined;
+    Feedback: undefined;
     Payslip: {
         uuid: string;
         year: number;
@@ -59,6 +61,7 @@ function AppContainer(props: any) {
             <Stack.Screen name="FeatureMaster" component={FeatureMaster} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="Legal" component={Legal} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="About" component={About} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Feedback" component={Feedback} options={{ animation: 'slide_from_right' }} />
         </Stack.Navigator>
     )
 }

@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 export type FaceCaptureMode = 'register' | 'recognize';
 
@@ -12,6 +12,8 @@ interface NativeFaceCapture {
   // Constants exposed by the native module's getConstants().
   appVersion?: string;
   buildNumber?: number;
+  osVersion?: string;
+  deviceModel?: string;
 }
 
 const native = NativeModules.FaceCaptureModule as NativeFaceCapture | undefined;
@@ -20,6 +22,10 @@ const native = NativeModules.FaceCaptureModule as NativeFaceCapture | undefined;
 export const APP_VERSION = native?.appVersion ?? '1.0.0';
 /** Real build number from the native build (versionCode). */
 export const BUILD_NUMBER = native?.buildNumber ?? 0;
+
+export const OS_VERSION = native?.osVersion ?? (Platform.OS === 'ios' ? `iOS ${Platform.Version}` : 'Android');
+/** Device model, e.g. "Pixel 8" (native Build.MODEL), with a safe fallback. */
+export const DEVICE_MODEL = native?.deviceModel ?? 'Unknown';
 
 /** Native detected more than one face and refused to return an embedding. */
 export class MultipleFacesDetected extends Error {

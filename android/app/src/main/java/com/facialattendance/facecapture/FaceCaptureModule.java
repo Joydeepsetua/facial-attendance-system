@@ -2,6 +2,7 @@ package com.facialattendance.facecapture;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -45,13 +46,18 @@ public class FaceCaptureModule extends ReactContextBaseJavaModule
     @Override
     public String getName() { return NAME; }
 
-    /** Exposes the build's version so JS can show the real app version (no extra dependency). */
+    /**
+     * Exposes the build's version and device info so JS can show the real app
+     * version and attach device metadata (e.g. to feedback) with no extra dependency.
+     */
     @Nullable
     @Override
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
         constants.put("appVersion", BuildConfig.VERSION_NAME);
         constants.put("buildNumber", BuildConfig.VERSION_CODE);
+        constants.put("osVersion", "Android " + Build.VERSION.RELEASE);
+        constants.put("deviceModel", Build.MODEL);
         return constants;
     }
 
