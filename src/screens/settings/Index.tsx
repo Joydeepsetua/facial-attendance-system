@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,8 +19,20 @@ interface SettingsItem {
   icon: AppIconName;
   route?: keyof RootStackParamList;
   params?: object;
+  action?: 'rate';
   danger?: boolean;
 }
+
+const PLAY_STORE_ID = 'com.facialattendance'; // matches android applicationId
+
+const openStoreForRating = async () => {
+  const webUrl = `https://play.google.com/store/apps/details?id=${PLAY_STORE_ID}`;
+  try {
+    await Linking.openURL(webUrl);
+  } catch {
+    showToast('Could not open the store', 'error');
+  }
+};
 
 // Whole list is driven by this array — add/remove/reorder rows here.
 const SETTINGS_ITEMS: SettingsItem[] = [
@@ -33,6 +45,7 @@ const SETTINGS_ITEMS: SettingsItem[] = [
   { key: 'privacy', label: 'Privacy Policy', icon: 'lock', route: 'Legal', params: { type: 'privacy' } },
   { key: 'terms', label: 'Terms & Conditions', icon: 'report', route: 'Legal', params: { type: 'terms' } },
   { key: 'feedback', label: 'Send Feedback', icon: 'feedback', route: 'Feedback' },
+  { key: 'rate', label: 'Rate Us', icon: 'star', action: 'rate' },
   { key: 'about', label: 'About', icon: 'help', route: 'About' },
   // { key: 'logout', label: 'Logout', icon: 'logout', danger: true },
 ];
@@ -41,7 +54,9 @@ const Settings = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const handlePress = (item: SettingsItem) => {
-    if (item.route) {
+    if (item.action === 'rate') {
+      openStoreForRating();
+    } else if (item.route) {
       (navigation.navigate as any)(item.route, item.params);
     } else {
       showToast(`${item.label} — coming soon`, 'success');
