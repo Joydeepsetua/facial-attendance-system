@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../../components/header/Index';
 import Icon from '../../components/icons/Index';
+import FeedbackSuccessModal from '../../components/feedbackSuccessModal/Index';
 import Styles from './Styles';
 import colors from '../../constants/colors';
 import { showToast } from '../../utils/toast';
@@ -140,6 +141,7 @@ const Feedback = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const clearError = (key: keyof FormErrors) =>
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
@@ -189,9 +191,8 @@ const Feedback = () => {
         deviceModel: DEVICE_MODEL,
       };
 
-      await submitFeedback(payload);
-      showToast("Thank you! Your feedback is valuable to us and helps us improve.", 'success');
-      setTimeout(() => navigation.goBack(), 500);
+      const message = await submitFeedback(payload);
+      setSuccessMessage(message);
     } catch (error: any) {
       console.error('Feedback submit error:', error);
       if (error instanceof FeedbackApiNotConfigured) {
@@ -363,6 +364,15 @@ const Feedback = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      <FeedbackSuccessModal
+        visible={successMessage !== null}
+        message={successMessage ?? ''}
+        onDone={() => {
+          setSuccessMessage(null);
+          navigation.goBack();
+        }}
+      />
     </SafeAreaView>
   );
 };

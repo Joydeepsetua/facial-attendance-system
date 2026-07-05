@@ -75,8 +75,13 @@ export const uploadFeedbackImage = async (asset: FeedbackImageAsset): Promise<st
   return hosted;
 };
 
-/** POST the feedback JSON. Resolves on a 2xx response, throws otherwise. */
-export const submitFeedback = async (payload: FeedbackPayload): Promise<void> => {
+const DEFAULT_THANKS = 'Thank you! Your feedback is valuable to us and helps us improve.';
+
+/**
+ * POST the feedback JSON. Resolves with the server's thank-you message (falling
+ * back to a default) on a 2xx response, throws otherwise.
+ */
+export const submitFeedback = async (payload: FeedbackPayload): Promise<string> => {
   if (!isFeedbackApiConfigured()) throw new FeedbackApiNotConfigured();
 
   const res = await fetch(url(FEEDBACK_SUBMIT_PATH), {
@@ -89,4 +94,7 @@ export const submitFeedback = async (payload: FeedbackPayload): Promise<void> =>
   });
 
   if (!res.ok) throw new Error(`Feedback submit failed (${res.status})`);
+
+  const body = await res.json().catch(() => null);
+  return typeof body?.message === 'string' && body.message ? body.message : DEFAULT_THANKS;
 };
